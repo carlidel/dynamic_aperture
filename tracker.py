@@ -45,25 +45,41 @@ def modulated_hennon_map(v0, n):
 # Let's try with this thing...
 
 def particle(x0, y0):
-	print("tracking particle ({},{})".format(x0,y0))
+	#print("tracking particle ({},{})".format(x0,y0))
 	v = np.array([x0, 0., y0, 0.])
 	for i in range(T):
 		v = modulated_hennon_map(v, i)
 		if np.absolute(v[0]) > boundary or np.absolute(v[2]) > boundary:
 			# particle lost!
-			print("particle ({},{}) lost at step {}.".format(x0,y0,i))
+			#print("particle ({},{}) lost at step {}.".format(x0,y0,i))
 			return i
 	# particle not lost!
-	print("particle ({},{}) survived.".format(x0,y0))
+	#print("particle ({},{}) survived.".format(x0,y0))
 	return -1
 
 # Single core (for now)
 # Single line (for now)
 
-flag = True
-i = 0
-while flag:
-	i += dx
-	flag = (-1 == particle(i,0))
+values = [0, 1, 4, 16, 64]
+times = [1000, 100000, 10000000]
+survival_limits = []
 
-print(i)
+for value in values:
+	print(value)
+	epsilon = value
+	temp = []
+	for time in times:
+		print(time)
+		T = time
+		flag = True
+		i = 0
+		while flag:
+			i += dx
+			flag = (-1 == particle(i,0))
+		temp.append(i)
+	survival_limits.append(temp)
+	print("Survival limit is {} for epsilon {}".format(i, epsilon))
+
+survival_limits = np.asarray(survival_limits)
+print(survival_limits)
+np.save("survival_limits")
