@@ -18,7 +18,7 @@ plt.show()
 dx = 0.01
 nangles = 30
 angles = np.linspace(0, np.pi/4, nangles)
-epsilons = [0, 1, 2, 4, 8, 16, 32, 64]
+epsilons = [32, 64]
 n_turns = [1000, 10000, 100000, 1000000, 10000000]
 
 for t in n_turns:
