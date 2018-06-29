@@ -1,14 +1,5 @@
 import numpy as np
 
-file = open("Data.txt", "w") 
-file.write("Begin!")
-
-# Parameters
-dx = 1.e-2 # Delta space
-n_theta = 30 # Number of scanned angles
-
-T = 100000 # Number of turns
-
 # Parameters of the modulated Hénnon Map
 epsilon_k = [1.000e-4,
 			 0.218e-4, 
@@ -29,17 +20,10 @@ Omega_k.append(12 * Omega_k[0])
 epsilon_k = np.asarray(epsilon_k)
 Omega_k = np.asarray(Omega_k)
 
-print(epsilon_k)
-print(Omega_k)
-
 omega_x0 = 0.168 * 2 * np.pi
 omega_y0 = 0.201 * 2 * np.pi
 
-epsilon = 1 
-
-boundary = 1.0
-
-def modulated_hennon_map(v0, n):
+def modulated_henon_map(v0, epsilon, n):
 	'''
 	v0 is the quadrimentional vector (x, px, y, py)
 	n is the iteration number
@@ -66,12 +50,12 @@ def modulated_hennon_map(v0, n):
 
 # Let's try with this thing...
 
-def particle(x0, y0):
+def modulated_particle(x0, y0, T, epsilon):
 	#print("tracking particle ({},{})".format(x0,y0))
 	v = np.array([x0, 0., y0, 0.])
 	for i in range(T):
-		v = modulated_hennon_map(v, i)
-		if np.absolute(v[0]) > boundary or np.absolute(v[2]) > boundary:
+		v = modulated_henon_map(v, epsilon, i)
+		if np.absolute(v[0]) > 1000 or np.absolute(v[2]) > 1000:
 			# particle lost!
 			#print("particle ({},{}) lost at step {}.".format(x0,y0,i))
 			return i
@@ -79,44 +63,32 @@ def particle(x0, y0):
 	#print("particle ({},{}) survived.".format(x0,y0))
 	return -1
 
-# Single core (for now)
+def modulated_map_scan(x0, x1, y0, y1, resx, resy, T, epsilon):
+	'''
+	Tracks all the particles in a rectangular zone
+	'''
+	region = [[modulated_particle((x/resx) * (x1-x0) + x0, (y/resy) * (y1-y0) + y0, T, epsilon) for y in range(resx)] for x in range(resy)]
+	return region
 
-'''
-def binary_search(low, high, theta):
-	middle = (low + high) // 2
-	#print(low, middle, high)
-	if middle == low:
-		return (False, middle, middle)
-	if particle(middle * dx * np.cos(theta), middle * dx * np.sin(theta)) != -1:
-		return (True, low, middle)
+def modulated_radius_scan(theta, dx, T, epsilon, stop_condition = "first_unstable", boundary = 1000):
+	'''
+	Given the angle and the radial step:
+	> if "first_unstable" will stop at the first (returns last stable step)
+	> if "boundary" will stop ad boundary (returns the whole array)
+	'''
+	if stop_condition == "first_unstable":
+		i = -1
+		flag = True
+		while flag:
+			i += 1
+			flag = modulated_particle(i * dx * np.cos(theta), i * dx * np.sin(theta), T, epsilon) == -1
+		return i * dx
+
+	elif stop_condition == "boundary":
+		results = np.empty((boundary))
+		for i in boundary:
+			results[i] = modulated_particle(i * dx * np.cos(theta), i * dx * np.sin(theta), T, epsilon)
+		return results
 	else:
-		return (True, middle, high)
-'''
-values = [0, 1, 4, 16, 64]
-times = [1000]#, 10000, 100000]
-angles = np.linspace(0., np.pi / 2, num=n_theta)
-survival_limits = []
-
-for time in times:
-	print(time)
-	T = time
-	temp = []
-	for value in values:
-		print(value)
-		epsilon = value
-		temp2 = []
-		for angle in angles:
-			i = 0
-			flag = True
-			while flag:
-				flag = particle(i * dx * np.cos(angle), i * dx * np.sin(angle)) == -1
-				i += 1
-			temp2.append(i * dx)
-		temp.append(temp2)
-	survival_limits.append(temp)
-	print(temp)
-	np.save("survival_limits_time{}".format(time), temp)
-
-survival_limits = np.asarray(survival_limits)
-print(survival_limits)
-np.save("survival_limits", survival_limits)
+		print("Error: stop condition not contemplated!")
+		assert False
