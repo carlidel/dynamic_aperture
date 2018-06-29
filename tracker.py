@@ -67,8 +67,8 @@ def modulated_map_scan(x0, x1, y0, y1, resx, resy, T, epsilon):
 	'''
 	Tracks all the particles in a rectangular zone
 	'''
-	region = [[modulated_particle((x/resx) * (x1-x0) + x0, (y/resy) * (y1-y0) + y0, T, epsilon) for y in range(resx)] for x in range(resy)]
-	return region
+	region = [[modulated_particle((x/resx) * (x1-x0) + x0, (y/resy) * (y1-y0) + y0, T, epsilon) for y in range(resy)] for x in range(resx)]
+	return np.asarray(region)
 
 def modulated_radius_scan(theta, dx, T, epsilon, stop_condition = "first_unstable", boundary = 1000):
 	'''
@@ -88,7 +88,7 @@ def modulated_radius_scan(theta, dx, T, epsilon, stop_condition = "first_unstabl
 		results = np.empty((boundary))
 		for i in boundary:
 			results[i] = modulated_particle(i * dx * np.cos(theta), i * dx * np.sin(theta), T, epsilon)
-		return results
+		return np.asarray(results)
 	else:
 		print("Error: stop condition not contemplated!")
 		assert False
