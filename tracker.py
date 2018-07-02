@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Parameters of the modulated Hénnon Map
 epsilon_k = [1.000e-4,
@@ -94,15 +93,14 @@ def modulated_radius_scan(theta, dx, T, epsilon, stop_condition = "first_unstabl
 		print("Error: stop condition not contemplated!")
 		assert False
 
-def display_map(region, x0, x1, y0, y1, filename = "stability_map.png", display = False):
-	'''
-	Wraps the imshow() method of matplotlib in order
-	to resolve the possible confusion with X and Y axis 
-	'''
+'''def display_map(region, x0, x1, y0, y1, filename = "stability_map.png", display = False):
+	
+	#Wraps the imshow() method of matplotlib in order
+	#to resolve the possible confusion with X and Y axis 
 	region = np.transpose(region)
 	plt.clf()
 	plt.imshow(region, origin="lower", extent=(x0,x1,y0,y1))
 	if display:
 		plt.show()
 	plt.savefig(filename)
-	plt.clf()
+	plt.clf()'''
