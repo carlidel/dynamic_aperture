@@ -18,7 +18,7 @@ dx = 0.01
 nangles = 30
 angles = np.linspace(0, np.pi/4, nangles)
 epsilons = [2, 4]
-n_turns = [2000, 7000, 50000, 200000, 700000]
+n_turns = [200000, 700000]
 
 for t in n_turns:
 	for e in epsilons:
