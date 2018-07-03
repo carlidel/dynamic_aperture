@@ -1,4 +1,4 @@
-executable            = ./angle_tracker.o
+executable            = script.sh
 output                = output/radscan.$(ClusterId).$(ProcId).out
 error                 = error/radscan.$(ClusterId).$(ProcId).err
 log                   = log/radscan.$(ClusterId).log
