@@ -1,4 +1,5 @@
-executable            = ./angle_tracker.o > radscan.$(ClusterId).$(ProcId).txt
+executable            = script.sh
+output                = output/radscan.$(ClusterId).$(ProcId).out
 error                 = error/radscan.$(ClusterId).$(ProcId).err
 log                   = log/radscan.$(ClusterId).log
 +JobFlavour = "espresso"
