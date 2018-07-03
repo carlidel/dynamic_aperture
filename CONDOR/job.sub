@@ -1,6 +1,7 @@
-executable            = script.sh
+executable            = ./angle_tracker.o
 output                = output/radscan.$(ClusterId).$(ProcId).out
 error                 = error/radscan.$(ClusterId).$(ProcId).err
 log                   = log/radscan.$(ClusterId).log
++JobFlavour = "espresso"
 
 queue arguments from arguments.txt

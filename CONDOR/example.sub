@@ -1,0 +1,6 @@
+executable              = welcome.sh
+arguments               = $(ClusterId)$(ProcId)
+output                  = output/welcome.$(ClusterId).$(ProcId).out
+error                   = error/welcome.$(ClusterId).$(ProcId).err
+log                     = log/welcome.$(ClusterId).log
+queue 10
