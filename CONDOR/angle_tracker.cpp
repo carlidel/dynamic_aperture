@@ -119,9 +119,9 @@ int main(int argc, const char * argv[])
 
 	double d_theta = M_PI / (4 * n_theta);
 
-	//std::string filename = "radscan_dx" + std::to_string(dx) + "_nthet" + std::to_string(n_theta) + "_epsilon" + std::to_string(epsilon) + ".txt";
+	std::string filename = "files/radscan_dx" + std::to_string(dx) + "_nt" + std::to_string(n_theta) + "_ep" + std::to_string(epsilon) + "_mx" + std::to_string(max_turns) + "_rg" + std::to_string(from) + "-" + std::to_string(to) + ".txt";
 
-	//std::ofstream out (filename, std::ofstream::out);
+	std::ofstream out (filename, std::ofstream::out);
 
 	std::cout << "dx " 			<< dx 			<< std::endl;
 	std::cout << "n_theta " 	<< n_theta 		<< std::endl;
@@ -131,18 +131,27 @@ int main(int argc, const char * argv[])
 	std::cout << "from_angle " 	<< from 		<< std::endl;
 	std::cout << "to_angle " 	<< to 			<< std::endl;
 
+	out << "dx " 		<< dx 			<< std::endl;
+	out << "n_theta " 	<< n_theta 		<< std::endl;
+	out << "dtheta " 	<< d_theta 		<< std::endl;
+	out << "epsilon " 	<< epsilon 		<< std::endl;
+	out << "max_turns " << max_turns	<< std::endl;
+	out << "from_angle "<< from 		<< std::endl;
+	out << "to_angle " 	<< to 			<< std::endl;
+
 	for (double angle = from * d_theta; angle < to * d_theta; angle += d_theta)
 	{
 		//std::cout << "Scanning angle: " << angle << "/" << M_PI / 4 << std::endl;
 		std::cout << angle << " ";
+		out << angle << " ";
 		std::vector<double> * v = modulated_radius_scan(angle, dx, epsilon, max_turns);
 		for (unsigned int i = 0; i < v->size(); ++i)
 		{
 			std::cout << v->at(i) << " ";
-			//out << v->at(i) << " ";
+			out << v->at(i) << " ";
 		}
 		std::cout << std::endl;
-		//out << std::endl;
+		out << std::endl;
 		delete v;
 	}
 	return 0;
