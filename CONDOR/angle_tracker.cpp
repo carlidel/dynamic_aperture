@@ -126,8 +126,8 @@ int main(int argc, const char * argv[])
 
 	for (double angle = 0; angle <= M_PI / 4; angle += d_theta)
 	{
-		std::cout << "Scanning angle: " << angle << "/" << M_PI / 4 << std::endl;
-		out << angle << " ";
+		//std::cout << "Scanning angle: " << angle << "/" << M_PI / 4 << std::endl;
+		std::cout << angle << " ";
 		std::vector<double> * v = modulated_radius_scan(angle, dx, epsilon);
 		for (unsigned int i = 0; i < v->size(); ++i)
 		{
