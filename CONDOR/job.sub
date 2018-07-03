@@ -1,11 +1,7 @@
 executable            = angle_tracker.o
-transfer_executable = TRUE
-should_transfer_files = yes
-when_to_transfer_output = ON_EXIT
-notification = NEVER
 output                = output/radscan.$(ClusterId).$(ProcId).out
 error                 = error/radscan.$(ClusterId).$(ProcId).err
 log                   = log/radscan.$(ClusterId).log
-+JobFlavour = "espresso"
++JobFlavour = "longlunch"
 
 queue arguments from arguments.txt

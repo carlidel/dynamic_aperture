@@ -154,6 +154,5 @@ int main(int argc, const char * argv[])
 		out << std::endl;
 		delete v;
 	}
-	printf("maledizione!!!\n");
 	return 0;
 }
