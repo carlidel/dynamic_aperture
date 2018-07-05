@@ -32,6 +32,14 @@ double Omega_k[7] =
 double omega_x0 = 0.168 * 2 * M_PI;
 double omega_y0 = 0.201 * 2 * M_PI;
 
+// 2 test
+// 0.28
+// 0.31
+
+// 3 test
+// 0.31
+// 0.32
+
 double * modulated_hennon_map(double * v0, double epsilon, unsigned int n)
 {
 	double sum = 0;
@@ -110,19 +118,35 @@ std::vector<double> * modulated_radius_scan(double theta, double dx, double epsi
 
 int main(int argc, const char * argv[])
 {
-	double dx = atof(argv[1]);
-	double n_theta = atoi(argv[2]);
-	double epsilon = atof(argv[3]);
-	unsigned int max_turns = atoi(argv[4]);
-	unsigned int from = atoi(argv[5]);
-	unsigned int to = atoi(argv[6]);
+	epsilon_k[0]			= atof(argv[1]);
+	epsilon_k[1]			= atof(argv[2]);
+	epsilon_k[2]			= atof(argv[3]);
+	epsilon_k[3]			= atof(argv[4]);
+	epsilon_k[4]			= atof(argv[5]);
+	epsilon_k[5]			= atof(argv[6]);
+	epsilon_k[6]			= atof(argv[7]);
+	omega_x0				= atof(argv[8]) * 2 * M_PI;
+	omega_y0				= atof(argv[9]) * 2 * M_PI;
+	double dx 				= atof(argv[10]);
+	double n_theta 			= atoi(argv[11]);
+	double epsilon 			= atof(argv[12]);
+	unsigned int max_turns 	= atoi(argv[13]);
+	unsigned int from 		= atoi(argv[14]);
+	unsigned int to 		= atoi(argv[15]);
 
 	double d_theta = M_PI / (4 * n_theta);
 
-	std::string filename = "files/radscan_dx" + std::to_string(dx) + "_nt" + std::to_string(n_theta) + "_ep" + std::to_string(epsilon) + "_mx" + std::to_string(max_turns) + "_rg" + std::to_string(from) + "-" + std::to_string(to) + ".txt";
+	// Variables
 
-	std::ofstream out (filename, std::ofstream::out);
-
+	std::cout << "epsilon_k[0]"	<< epsilon_k[0]	<< std::endl;
+	std::cout << "epsilon_k[0]"	<< epsilon_k[1]	<< std::endl;
+	std::cout << "epsilon_k[0]"	<< epsilon_k[2]	<< std::endl;
+	std::cout << "epsilon_k[0]"	<< epsilon_k[3]	<< std::endl;
+	std::cout << "epsilon_k[0]"	<< epsilon_k[4]	<< std::endl;
+	std::cout << "epsilon_k[0]"	<< epsilon_k[5]	<< std::endl;
+	std::cout << "epsilon_k[0]"	<< epsilon_k[6]	<< std::endl;
+	std::cout << "omega_x0"		<< omega_x0		<< std::endl;
+	std::cout << "omega_y0"		<< omega_y0 	<< std::endl;
 	std::cout << "dx " 			<< dx 			<< std::endl;
 	std::cout << "n_theta " 	<< n_theta 		<< std::endl;
 	std::cout << "dtheta " 		<< d_theta 		<< std::endl;
@@ -131,27 +155,16 @@ int main(int argc, const char * argv[])
 	std::cout << "from_angle " 	<< from 		<< std::endl;
 	std::cout << "to_angle " 	<< to 			<< std::endl;
 
-	out << "dx " 		<< dx 			<< std::endl;
-	out << "n_theta " 	<< n_theta 		<< std::endl;
-	out << "dtheta " 	<< d_theta 		<< std::endl;
-	out << "epsilon " 	<< epsilon 		<< std::endl;
-	out << "max_turns " << max_turns	<< std::endl;
-	out << "from_angle "<< from 		<< std::endl;
-	out << "to_angle " 	<< to 			<< std::endl;
-
 	for (double angle = from * d_theta; angle < to * d_theta; angle += d_theta)
 	{
 		//std::cout << "Scanning angle: " << angle << "/" << M_PI / 4 << std::endl;
 		std::cout << angle << " ";
-		out << angle << " ";
 		std::vector<double> * v = modulated_radius_scan(angle, dx, epsilon, max_turns);
 		for (unsigned int i = 0; i < v->size(); ++i)
 		{
 			std::cout << v->at(i) << " ";
-			out << v->at(i) << " ";
 		}
 		std::cout << std::endl;
-		out << std::endl;
 		delete v;
 	}
 	return 0;

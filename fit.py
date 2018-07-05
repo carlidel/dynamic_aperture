@@ -51,6 +51,7 @@ for epsilon in data:
 print(D[1])
 print(Err[1])
 
+#%%
 
 # Non linear Fit
 
@@ -85,14 +86,14 @@ for epsilon in D:
 	popt, pcov = curve_fit(func, [k for k in sorted(D[epsilon])], [D[epsilon][k] for k in sorted(D[epsilon])], sigma = [Err[epsilon][k] for k in sorted(Err[epsilon])])
 	# Plot everything
 	plt.errorbar([k for k in sorted(D[epsilon])], [D[epsilon][k] for k in sorted(D[epsilon])], yerr = [Err[epsilon][k] for k in sorted(Err[epsilon])], linewidth = 0, elinewidth = 2, label = 'Data')
-	plt.plot(n_turns, func(n_turns, popt[0], popt[1]), 'g--', label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(popt[0], popt[1], constant))
+	plt.plot(n_turns, func(n_turns, popt[0], popt[1]), 'g--', label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(popt[0], popt[1], constant), linewidth = 0.5)
 	plt.axhline(y = popt[0], color = 'r', linestyle = '-', label = 'y=A={:6.3f}'.format(popt[0]))
 	plt.legend()
 	plt.xlabel("N turns")
-	plt.xscale("log")
+	#plt.xscale("log")
 	plt.ylabel("D (A.U.)")
 	plt.ylim((0,1))
-	plt.title("Epsilon = {:2.0f}".format(epsilon))
+	plt.title("dx = {:3.3f}, N_angles = {}, Epsilon = {:2.0f}".format(dx, nangles, epsilon))
 	plt.tight_layout()
-	plt.savefig("img/fit_radscan_epsilon{}.png".format(epsilon))
+	plt.savefig("img/fit_radscan_epsilon{}.png".format(epsilon), dpi = 600)
 	plt.clf()
