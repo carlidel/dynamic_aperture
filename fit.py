@@ -120,9 +120,10 @@ for epsilon in fit_parameters:
         plt.xlabel("N turns")
         plt.xscale("log")
         plt.ylabel("D (A.U.)")
-        plt.title("dx = {:3.3f}, dtheta = {}, Central angle = {}, Epsilon = {:2.0f}".format(dx, dtheta, angle, epsilon).format(epsilon))
+        plt.ylim(0.,1.)
+        plt.title("dx = {:3.3f}, dth = {:3.3f}, c.angle = {:3.3f}, epsilon = {:2.0f}".format(dx, dtheta, angle, epsilon).format(epsilon))
         plt.tight_layout()
-        plt.savefig("img/fit_epsilon{}_angle{}_Npart{}.png".format(epsilon,angle,len(partition_list) - 1))
+        plt.savefig("img/fit_epsilon{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon,angle,len(partition_list) - 1), dpi = 600)
         plt.clf()
         
         
