@@ -1,6 +1,6 @@
-import os
+import pickle
 
-cluster_id = "radscan.411211."
+cluster_id = "RAW/radscan.411211."
 job_numbers = 104
 
 def process_file(filename):
@@ -35,4 +35,7 @@ for i in range(job_numbers):
 	else:
 		dictionary[jobs[i][2]] = jobs[i][6]
 
-print(dictionary[0.0])
+#print(dictionary[1])
+
+with open("radscan_dx001_dictionary.pkl", "wb") as f:
+	pickle.dump(dictionary, f, pickle.HIGHEST_PROTOCOL)
