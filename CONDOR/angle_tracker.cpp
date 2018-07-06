@@ -134,7 +134,7 @@ int main(int argc, const char * argv[])
 	unsigned int from 		= atoi(argv[14]);
 	unsigned int to 		= atoi(argv[15]);
 
-	double d_theta = M_PI / (4 * n_theta);
+	double d_theta = M_PI / (2 * n_theta);
 
 	// Variables
 
