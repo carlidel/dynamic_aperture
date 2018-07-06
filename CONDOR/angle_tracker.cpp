@@ -54,7 +54,7 @@ double * modulated_hennon_map(double * v0, double epsilon, unsigned int n)
 	double siny = sin(omega_y);
 
 	double v[4];
-	// orario o antiorario?
+	// clockwise!
 	v[0] = cosx * v0[0] + sinx * (v0[1] + v0[0] * v0[0] - v0[2] * v0[2]);
 	v[1] = -sinx * v0[0] + cosx * (v0[1] + v0[0] * v0[0] - v0[2] * v0[2]);
 	v[2] = cosy * v0[2] + siny * (v0[3] - 2 * v0[0] * v0[2]);
@@ -145,8 +145,8 @@ int main(int argc, const char * argv[])
 	std::cout << "epsilon_k[0] "<< epsilon_k[4]	<< std::endl;
 	std::cout << "epsilon_k[0] "<< epsilon_k[5]	<< std::endl;
 	std::cout << "epsilon_k[0] "<< epsilon_k[6]	<< std::endl;
-	std::cout << "omega_x0 "	<< omega_x0		<< std::endl;
-	std::cout << "omega_y0 "	<< omega_y0 	<< std::endl;
+	std::cout << "omega_x0 "	<< atof(argv[8])<< std::endl;
+	std::cout << "omega_y0 "	<< atof(argv[9])<< std::endl;
 	std::cout << "dx " 			<< dx 			<< std::endl;
 	std::cout << "n_theta " 	<< n_theta 		<< std::endl;
 	std::cout << "dtheta " 		<< d_theta 		<< std::endl;
