@@ -21,7 +21,7 @@ partition_lists = np.array([[0, np.pi / 4], [0, np.pi / 8, np.pi / 4], [0, np.pi
 
 # Load data
 
-data = pickle.load(open("radscan_dx01_dictionary.pkl", "rb"))
+data = pickle.load(open("radscan_dx01_wxy_dictionary.pkl", "rb"))
 
 # Compute D and Error estimation of D
 
@@ -126,9 +126,9 @@ for partition_list in partition_lists:
             plt.xscale("log")
             plt.ylabel("D (A.U.)")
             plt.ylim(0.,1.)
-            plt.title("dx = {:3.3f}, dth = {:3.3f}, c.angle = {:3.3f}, epsilon = {:2.0f}".format(dx, dtheta, angle, epsilon).format(epsilon))
+            plt.title("dx = {:3.3f}, dth = {:3.3f}, c.angle = {:3.3f},\nepsilon = {:2.0f}, wx = {:2.2f}, wy = {:2.2f}".format(dx, dtheta, angle, epsilon[2], epsilon[0], epsilon[1]))
             plt.tight_layout()
-            plt.savefig("img/fit_epsilon{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon,angle,len(partition_list) - 1), dpi = 600)
+            plt.savefig("img/fit_eps{:2.0f}_wx{:2.2f}_wy{:2.2f}_angle{:3.3f}_Npart{}.png".format(epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = 600)
             plt.clf()
             
 
@@ -148,10 +148,10 @@ for epsilon in partition[1]:
     plt.plot(theta, k, "^", label = "k")
     plt.xlabel("Theta (radians)")
     plt.ylabel("Fit values (A.U.)")
-    plt.title("Fit values at different angles, epsilon = {:2.2f}".format(epsilon))
+    plt.title("Fit values at different angles,\nepsilon = {:2.0f}, wx = {:2.2f}, wy = {:2.2f}".format(epsilon))
     plt.legend()
     plt.tight_layout()
-    plt.savefig("img/angles_epsilon{:2.2f}".format(epsilon), dpi = 600)
+    plt.savefig("img/angles_eps{:2.0f}_wx{:2.2f}_wy{:2.2f}.png".format(epsilon[2], epsilon[0], epsilon[1]), dpi = 600)
     plt.clf()
 
 #%%

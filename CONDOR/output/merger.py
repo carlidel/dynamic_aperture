@@ -1,7 +1,7 @@
 import pickle
 
-cluster_id = "RAW/radscan.411211."
-job_numbers = 104
+cluster_id = "radscan.416108."
+job_numbers = 468
 
 def process_file(filename):
 	file = open(filename, mode='r')
@@ -18,13 +18,14 @@ def process_file(filename):
 	omega_y0		= float(lines[8].split(" ")[1])
 	dx 				= float(lines[9].split(" ")[1])
 	n_theta 		= int(lines[10].split(" ")[1])
-	epsilon 		= float(lines[11].split(" ")[1])
-	max_turns 		= float(lines[12].split(" ")[1])
-	from_angle 		= float(lines[13].split(" ")[1])
-	to_angle 		= float(lines[14].split(" ")[1])
+	dtheta			= float(lines[11].split(" ")[1])
+	epsilon 		= float(lines[12].split(" ")[1])
+	max_turns 		= float(lines[13].split(" ")[1])
+	from_angle 		= float(lines[14].split(" ")[1])
+	to_angle 		= float(lines[15].split(" ")[1])
 	# everything else
 	dictionary = {}
-	for i in range(15, len(lines)):
+	for i in range(16, len(lines)):
 		splitted = lines[i].split(" ")
 		dictionary[float(splitted[0])] = [int(float(splitted[i])) for i in range(1, len(splitted)-1)]
 	#print(dictionary)
