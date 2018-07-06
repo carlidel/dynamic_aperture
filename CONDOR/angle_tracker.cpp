@@ -139,12 +139,12 @@ int main(int argc, const char * argv[])
 	// Variables
 
 	std::cout << "epsilon_k[0] "<< epsilon_k[0]	<< std::endl;
-	std::cout << "epsilon_k[0] "<< epsilon_k[1]	<< std::endl;
-	std::cout << "epsilon_k[0] "<< epsilon_k[2]	<< std::endl;
-	std::cout << "epsilon_k[0] "<< epsilon_k[3]	<< std::endl;
-	std::cout << "epsilon_k[0] "<< epsilon_k[4]	<< std::endl;
-	std::cout << "epsilon_k[0] "<< epsilon_k[5]	<< std::endl;
-	std::cout << "epsilon_k[0] "<< epsilon_k[6]	<< std::endl;
+	std::cout << "epsilon_k[1] "<< epsilon_k[1]	<< std::endl;
+	std::cout << "epsilon_k[2] "<< epsilon_k[2]	<< std::endl;
+	std::cout << "epsilon_k[3] "<< epsilon_k[3]	<< std::endl;
+	std::cout << "epsilon_k[4] "<< epsilon_k[4]	<< std::endl;
+	std::cout << "epsilon_k[5] "<< epsilon_k[5]	<< std::endl;
+	std::cout << "epsilon_k[6] "<< epsilon_k[6]	<< std::endl;
 	std::cout << "omega_x0 "	<< atof(argv[8])<< std::endl;
 	std::cout << "omega_y0 "	<< atof(argv[9])<< std::endl;
 	std::cout << "dx " 			<< dx 			<< std::endl;
