@@ -33,13 +33,13 @@ def process_file(filename):
 
 jobs = []
 
-for i in range(job_numbers):
+for i in range(job_numbers//3):
 	print("Processing Job {}.".format(i))
 	jobs.append(process_file(cluster_id + str(i) + ".out"))
 
 dictionary = {}
 
-for i in range(job_numbers):
+for i in range(job_numbers//3):
 	if (jobs[i][7], jobs[i][8], jobs[i][11]) in dictionary:
 		dictionary[(jobs[i][7], jobs[i][8], jobs[i][11])] = {**dictionary[(jobs[i][7], jobs[i][8], jobs[i][11])], **jobs[i][15]}
 	else:
@@ -47,5 +47,5 @@ for i in range(job_numbers):
 
 #print(dictionary[1])
 
-with open("radscan_dx01_wxy_dictionary.pkl", "wb") as f:
+with open("radscan_dx01_firstonly_dictionary.pkl", "wb") as f:
 	pickle.dump(dictionary, f, pickle.HIGHEST_PROTOCOL)
