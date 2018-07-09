@@ -7,7 +7,7 @@ import png_to_jpg as converter
 # Print precision and DPI
 
 np.set_printoptions(precision=3)
-DPI = 200
+DPI = 150
 
 # Initialize Parameters used in the simulation
 
@@ -21,7 +21,11 @@ n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 3000, 4000, 5000, 6000, 
 
 partition_lists = np.array([[0, np.pi / 2]])
 
-#partition_lists = np.array([[0, np.pi / 2], [0, np.pi / 4, np.pi / 2], [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]])
+partition_lists = np.array([[0, np.pi / 2], # Always always keep this one 
+                            [0, np.pi / 4, np.pi / 2], 
+                            [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], 
+                            [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
+                            [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2]])
 
 def divide_and_compute(data, n_turns, partition_list = [0, np.pi/2]):
     '''
@@ -208,109 +212,134 @@ for partition_list in partition_lists:
 
 #%%
 # Plot Everything 1
-
-for N in fit_parameters1:
-    for epsilon in fit_parameters1[N]:
-        for angle in fit_parameters1[N][epsilon]:
-            plt.errorbar(n_turns, [dynamic_aperture[N][epsilon][angle][0][i] for i in n_turns], yerr=[dynamic_aperture[N][epsilon][angle][1][i] for i in n_turns], linewidth = 0, elinewidth = 2, label = 'Data')
-            plt.plot(n_turns, function_1(n_turns, fit_parameters1[N][epsilon][angle][0],fit_parameters1[N][epsilon][angle][1],fit_parameters1[N][epsilon][angle][2]), 'g--', linewidth=0.5, label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(fit_parameters1[N][epsilon][angle][0],fit_parameters1[N][epsilon][angle][1],fit_parameters1[N][epsilon][angle][2]))
-            plt.axhline(y = fit_parameters1[N][epsilon][angle][0], color = 'r', linestyle = '-', label = 'y=A={:6.3f}'.format(fit_parameters1[N][epsilon][angle][0]))
-            plt.legend()
-            plt.xlabel("N turns")
-            plt.xscale("log")
-            plt.ylabel("D (A.U.)")
-            plt.ylim(0.,1.)
-            plt.title("Fit formula: A + B \\ (log10(x))^k\ndx = {:2.2f}, dth = {:3.3f}, c.angle = {:3.3f},\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(dx, dtheta, angle, epsilon[2], epsilon[0], epsilon[1]))
-            plt.tight_layout()
-            plt.savefig("img/fit1_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = DPI)
-            plt.clf()
+N = 1
+for epsilon in fit_parameters1[N]:
+    for angle in fit_parameters1[N][epsilon]:
+        plt.errorbar(n_turns, [dynamic_aperture[N][epsilon][angle][0][i] for i in n_turns], yerr=[dynamic_aperture[N][epsilon][angle][1][i] for i in n_turns], linewidth = 0, elinewidth = 2, label = 'Data')
+        plt.plot(n_turns, function_1(n_turns, fit_parameters1[N][epsilon][angle][0],fit_parameters1[N][epsilon][angle][1],fit_parameters1[N][epsilon][angle][2]), 'g--', linewidth=0.5, label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(fit_parameters1[N][epsilon][angle][0],fit_parameters1[N][epsilon][angle][1],fit_parameters1[N][epsilon][angle][2]))
+        plt.axhline(y = fit_parameters1[N][epsilon][angle][0], color = 'r', linestyle = '-', label = 'y=A={:6.3f}'.format(fit_parameters1[N][epsilon][angle][0]))
+        plt.legend()
+        plt.xlabel("N turns")
+        plt.xscale("log")
+        plt.ylabel("D (A.U.)")
+        plt.ylim(0.,1.)
+        plt.title("Fit formula: A + B \\ (log10(x))^k\ndx = {:2.2f}, dth = {:3.3f}, c.angle = {:3.3f},\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(dx, dtheta, angle, epsilon[2], epsilon[0], epsilon[1]))
+        plt.tight_layout()
+        plt.savefig("img/fit1_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = DPI)
+        plt.clf()
             
 #%%
 # Plot Everything 2
-
-for N in fit_parameters2:
-    for epsilon in fit_parameters2[N]:
-        for angle in fit_parameters2[N][epsilon]:
-            plt.errorbar(n_turns, [dynamic_aperture[N][epsilon][angle][0][i] for i in n_turns], yerr=[dynamic_aperture[N][epsilon][angle][1][i] for i in n_turns], linewidth = 0, elinewidth = 2, label = 'Data')
-            plt.plot(n_turns, function_2(n_turns, fit_parameters2[N][epsilon][angle][0],fit_parameters2[N][epsilon][angle][1],fit_parameters2[N][epsilon][angle][2]), 'g--', linewidth=0.5, label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(fit_parameters2[N][epsilon][angle][0],fit_parameters2[N][epsilon][angle][1],fit_parameters2[N][epsilon][angle][2]))
-            plt.legend()
-            plt.xlabel("N turns")
-            plt.xscale("log")
-            plt.ylabel("D (A.U.)")
-            plt.ylim(0.,1.)
-            plt.title("Fit formula: B \\ (log10(x) - A)^k\ndx = {:2.2f}, dth = {:3.3f}, c.angle = {:3.3f},\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(dx, dtheta, angle, epsilon[2], epsilon[0], epsilon[1]))
-            plt.tight_layout()
-            plt.savefig("img/fit2_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = DPI)
-            plt.clf()
+N = 1
+for epsilon in fit_parameters2[N]:
+    for angle in fit_parameters2[N][epsilon]:
+        plt.errorbar(n_turns, [dynamic_aperture[N][epsilon][angle][0][i] for i in n_turns], yerr=[dynamic_aperture[N][epsilon][angle][1][i] for i in n_turns], linewidth = 0, elinewidth = 2, label = 'Data')
+        plt.plot(n_turns, function_2(n_turns, fit_parameters2[N][epsilon][angle][0],fit_parameters2[N][epsilon][angle][1],fit_parameters2[N][epsilon][angle][2]), 'g--', linewidth=0.5, label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(fit_parameters2[N][epsilon][angle][0],fit_parameters2[N][epsilon][angle][1],fit_parameters2[N][epsilon][angle][2]))
+        plt.legend()
+        plt.xlabel("N turns")
+        plt.xscale("log")
+        plt.ylabel("D (A.U.)")
+        plt.ylim(0.,1.)
+        plt.title("Fit formula: B \\ (log10(x) - A)^k\ndx = {:2.2f}, dth = {:3.3f}, c.angle = {:3.3f},\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(dx, dtheta, angle, epsilon[2], epsilon[0], epsilon[1]))
+        plt.tight_layout()
+        plt.savefig("img/fit2_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = DPI)
+        plt.clf()
 
 #%%
 # Plot Everything 3
-
-for N in fit_parameters3:
-    for epsilon in fit_parameters3[N]:
-        for angle in fit_parameters3[N][epsilon]:
-            plt.errorbar(n_turns, [dynamic_aperture[N][epsilon][angle][0][i] for i in n_turns], yerr=[dynamic_aperture[N][epsilon][angle][1][i] for i in n_turns], linewidth = 0, elinewidth = 2, label = 'Data')
-            plt.plot(n_turns, function_3(n_turns, fit_parameters3[N][epsilon][angle][0],fit_parameters3[N][epsilon][angle][1],fit_parameters3[N][epsilon][angle][2]), 'g--', linewidth=0.5, label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(fit_parameters3[N][epsilon][angle][0],fit_parameters3[N][epsilon][angle][1],fit_parameters3[N][epsilon][angle][2]))
-            plt.axhline(y = fit_parameters3[N][epsilon][angle][0], color = 'r', linestyle = '-', label = 'y=A={:6.3f}'.format(fit_parameters3[N][epsilon][angle][0]))
-            plt.legend()
-            plt.xlabel("N turns")
-            plt.xscale("log")
-            plt.ylabel("D (A.U.)")
-            plt.ylim(0.,1.)
-            plt.title("Fit formula: A * (1 + B \\ (log10(x) - C)^k)\ndx = {:2.2f}, dth = {:3.3f}, c.angle = {:3.3f},\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(dx, dtheta, angle, epsilon[2], epsilon[0], epsilon[1]))
-            plt.tight_layout()
-            plt.savefig("img/fit3_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = DPI)
-            plt.clf()
+N = 1
+for epsilon in fit_parameters3[N]:
+    for angle in fit_parameters3[N][epsilon]:
+        plt.errorbar(n_turns, [dynamic_aperture[N][epsilon][angle][0][i] for i in n_turns], yerr=[dynamic_aperture[N][epsilon][angle][1][i] for i in n_turns], linewidth = 0, elinewidth = 2, label = 'Data')
+        plt.plot(n_turns, function_3(n_turns, fit_parameters3[N][epsilon][angle][0],fit_parameters3[N][epsilon][angle][1],fit_parameters3[N][epsilon][angle][2]), 'g--', linewidth=0.5, label = 'fit: A={:6.3f}, B={:6.3f}, k={:6.3f}'.format(fit_parameters3[N][epsilon][angle][0],fit_parameters3[N][epsilon][angle][1],fit_parameters3[N][epsilon][angle][2]))
+        plt.axhline(y = fit_parameters3[N][epsilon][angle][0], color = 'r', linestyle = '-', label = 'y=A={:6.3f}'.format(fit_parameters3[N][epsilon][angle][0]))
+        plt.legend()
+        plt.xlabel("N turns")
+        plt.xscale("log")
+        plt.ylabel("D (A.U.)")
+        plt.ylim(0.,1.)
+        plt.title("Fit formula: A * (1 + B \\ (log10(x) - C)^k)\ndx = {:2.2f}, dth = {:3.3f}, c.angle = {:3.3f},\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(dx, dtheta, angle, epsilon[2], epsilon[0], epsilon[1]))
+        plt.tight_layout()
+        plt.savefig("img/fit3_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = DPI)
+        plt.clf()
 
 #%%
 # Fit Parameter Comparison 1
-
-for epsilon in fit_parameters1[list(fit_parameters1.keys())[0]]:
-    theta = []
-    A = []
-    B = []
-    k = []    
-    for sector in fit_parameters1:
-        for angle in fit_parameters1[sector][epsilon]:
-            theta.append(angle)
-            A.append(fit_parameters1[sector][epsilon][angle][0])
-            B.append(fit_parameters1[sector][epsilon][angle][1])
-            k.append(fit_parameters1[sector][epsilon][angle][2])
-    plt.plot(theta, A, "o", linewidth = 0.5, label = "A")
-    plt.plot(theta, B, "*", linewidth = 0.5, label = "B")
-    plt.plot(theta, k, "^", linewidth = 0.5, label = "k")
-    plt.xlabel("Theta (radians)")
-    plt.ylabel("Fit values (A.U.)")
-    plt.title("Fit values at different angles,\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(epsilon[2], epsilon[0], epsilon[1]))
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig("img/angles1_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
-    plt.clf()
+for sector in fit_parameters1:
+    if sector > 1:
+        for epsilon in fit_parameters1[sector]:    
+            theta = []
+            A = []
+            B = []
+            k = []
+            for angle in fit_parameters1[sector][epsilon]:
+                theta.append(angle / np.pi)
+                A.append(fit_parameters1[sector][epsilon][angle][0])
+                B.append(fit_parameters1[sector][epsilon][angle][1])
+                k.append(fit_parameters1[sector][epsilon][angle][2])
+            plt.plot(theta, A, marker = "o", linewidth = 0.5, label = "A")
+            plt.plot(theta, B, marker = "*", linewidth = 0.5, label = "B")
+            plt.plot(theta, k, marker = "^", linewidth = 0.5, label = "k")
+            plt.xlim((0,0.5))
+            plt.xlabel("Theta (radians / pi)")
+            plt.ylabel("Fit values (A.U.)")
+            plt.title("Fit 1 values at different angles (n_sectors = {}),\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(sector, epsilon[2], epsilon[0], epsilon[1]))
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig("img/angles1_nsec{}_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(sector, epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
+            plt.clf()
 
 #%%
 # Fit Parameter Comparison 2
+for sector in fit_parameters2:
+    if sector > 1:
+        for epsilon in fit_parameters2[sector]:
+            theta = []
+            A = []
+            B = []
+            k = []    
+            for angle in fit_parameters2[sector][epsilon]:
+                theta.append(angle / np.pi)
+                A.append(fit_parameters2[sector][epsilon][angle][0])
+                B.append(fit_parameters2[sector][epsilon][angle][1])
+                k.append(fit_parameters2[sector][epsilon][angle][2])
+            plt.plot(theta, A, marker = "o", linewidth = 0.5, label = "A")
+            plt.plot(theta, B, marker = "*", linewidth = 0.5, label = "B")
+            plt.plot(theta, k, marker = "^", linewidth = 0.5, label = "k")
+            plt.xlim((0,0.5))
+            plt.xlabel("Theta (radians / pi)")
+            plt.ylabel("Fit values (A.U.)")
+            plt.title("Fit 2 values at different angles (n_sectors = {}),\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(sector, epsilon[2], epsilon[0], epsilon[1]))
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig("img/angles2_nsec{}_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(sector, epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
+            plt.clf()
 
-for epsilon in fit_parameters2[list(fit_parameters2.keys())[0]]:
-    theta = []
-    A = []
-    B = []
-    k = []    
-    for sector in fit_parameters2:
-        for angle in fit_parameters2[sector][epsilon]:
-            theta.append(angle)
-            A.append(fit_parameters2[sector][epsilon][angle][0])
-            B.append(fit_parameters2[sector][epsilon][angle][1])
-            k.append(fit_parameters2[sector][epsilon][angle][2])
-    plt.plot(theta, A, "o", linewidth = 0.5, label = "A")
-    plt.plot(theta, B, "*", linewidth = 0.5, label = "B")
-    plt.plot(theta, k, "^", linewidth = 0.5, label = "k")
-    plt.xlabel("Theta (radians)")
-    plt.ylabel("Fit values (A.U.)")
-    plt.title("Fit values at different angles,\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(epsilon[2], epsilon[0], epsilon[1]))
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig("img/angles2_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
-    plt.clf()
+#%%
+# Fit Parameter Comparison 3
+for sector in fit_parameters3:
+    if sector > 1:
+        for epsilon in fit_parameters3[sector]:    
+            theta = []
+            A = []
+            B = []
+            k = []
+            for angle in fit_parameters3[sector][epsilon]:
+                theta.append(angle / np.pi)
+                A.append(fit_parameters3[sector][epsilon][angle][0])
+                B.append(fit_parameters3[sector][epsilon][angle][1])
+                k.append(fit_parameters3[sector][epsilon][angle][2])
+            plt.plot(theta, A, marker = "o", linewidth = 0.5, label = "A")
+            plt.plot(theta, B, marker = "*", linewidth = 0.5, label = "B")
+            plt.plot(theta, k, marker = "^", linewidth = 0.5, label = "k")
+            plt.xlim((0,0.5))
+            plt.xlabel("Theta (radians / pi)")
+            plt.ylabel("Fit values (A.U.)")
+            plt.title("Fit 3 values at different angles (n_sectors = {}),\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(sector, epsilon[2], epsilon[0], epsilon[1]))
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig("img/angles3_nsec{}_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(sector, epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
+            plt.clf()
 
 
 #%%
