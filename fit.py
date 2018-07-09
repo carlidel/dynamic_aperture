@@ -17,7 +17,7 @@ epsilons = [0, 1, 2, 4, 8, 16, 32, 64]
 
 n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 120000, 140000, 160000, 180000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000])
 
-partition_lists = np.array([[0, np.pi / 2]])
+partition_lists = np.array([[0, np.pi / 2],[0, np.pi / 8, np.pi / 4, np.pi * 3 / 8, np.pi / 2]])
 
 #partition_lists = np.array([[0, np.pi / 2], [0, np.pi / 4, np.pi / 2], [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]])
 
@@ -143,7 +143,7 @@ for N in partition:
 #%%
 # Fit Parameter Comparison
 
-for epsilon in partition[1]:
+for epsilon in partition[4]:
     theta = []
     A = []
     B = []
@@ -154,9 +154,9 @@ for epsilon in partition[1]:
             A.append(partition[sector][epsilon][angle][0])
             B.append(partition[sector][epsilon][angle][1])
             k.append(partition[sector][epsilon][angle][2])
-    plt.plot(theta, A, "o", label = "A")
-    plt.plot(theta, B, "*", label = "B")
-    plt.plot(theta, k, "^", label = "k")
+    plt.plot(theta, A, "o", linewidth = 0.5, label = "A")
+    plt.plot(theta, B, "*", linewidth = 0.5, label = "B")
+    plt.plot(theta, k, "^", linewidth = 0.5, label = "k")
     plt.xlabel("Theta (radians)")
     plt.ylabel("Fit values (A.U.)")
     plt.title("Fit values at different angles,\nepsilon = {:2.0f}, wx = {:3.3f}, wy = {:3.3f}".format(epsilon[2], epsilon[0], epsilon[1]))
