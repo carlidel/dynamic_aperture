@@ -1,5 +1,6 @@
-# JPEG stuff
-
+# JPEG stuff and images
+*.jpg
+*.png
 */JPEG/*
 
 # Byte-compiled / optimized / DLL files
