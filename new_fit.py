@@ -10,18 +10,20 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 np.set_printoptions(precision=3)
-DPI = 100
+DPI = 300
 
 # Parameters placed in the simulation
 
 dx = 0.01
-n_scanned_angles = 100
-angles = np.linspace(0, np.pi / 2, n_scanned_angles)
+n_scanned_angles = 101
+angles = np.linspace(0, np.pi / 2, n_scanned_angles + 1)
 dtheta = angles[1] - angles[0]
 
 # Scanned N_turns
 
-n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 120000, 140000, 160000, 180000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000])
+'''n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 120000, 140000, 160000, 180000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000])'''
+
+n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 10000, 12000, 14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 70000, 75000, 80000, 85000, 90000, 95000, 100000, 120000, 140000, 160000, 180000, 200000, 250000, 300000, 350000, 400000, 450000, 500000, 550000, 600000, 650000, 700000, 750000, 800000, 850000, 900000, 950000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000, 2500000, 3000000, 3500000, 4000000, 4500000, 5000000, 5500000, 6000000, 6500000, 7000000, 7500000, 8000000, 8500000, 9000000, 9500000, 10000000])
 
 # Partition list for basic angle partitioning
 
@@ -37,8 +39,8 @@ partition_lists = np.array([[0, np.pi / 2], # Always always keep this one
 
 # Convolution parameters for advanced angle paritioning
 
-n_angles_in_partition = 50
-stride = 50
+n_angles_in_partition = 30
+stride = 5
 
 # Exponential fit parameters
 
@@ -47,6 +49,14 @@ k_min = -5.
 n_k = 200
 k_possible_values = np.linspace(k_min, k_max, n_k)
 k_error = k_possible_values[1] - k_possible_values[0]
+
+# Loss parameters
+
+def intensity_zero(x, y, sigma_x = 1, sigma_y = 1):
+    return (1 / (2 * np.pi * sigma_x * sigma_y)) * np.exp(-((x**2/(2*sigma_x**2))+(y**2/(2*sigma_y**2))))
+
+def intensity_from_dynamic_aperture(D):
+    return 1 - np.exp(- D**2 / 2)
 
 # Function Definitions
 
@@ -315,22 +325,75 @@ for epsilon in fit_parameters4[N]:
         plot_fit_basic(4, best_fit, N, epsilon, angle, n_turns, dynamic_aperture, function_4k, True, True)
         
 #%%
+print("Plot Fit Performances.")        
+        
 def compare_fit_chi_squared(fit1, fit2, fit3, fit4):
     for epsilon in fit1[1]:
         for angle in fit1[1][epsilon]:
-            plt.plot(list(fit1[1][epsilon][angle].keys()), [x[2] for x in list(fit1[1][epsilon][angle].values())], marker = "o", label = "fit1")
-            plt.plot(list(fit2[1][epsilon][angle].keys()), [x[2] for x in list(fit2[1][epsilon][angle].values())], marker = "o", label = "fit2")
-            plt.plot(list(fit3[1][epsilon][angle].keys()), [x[2] for x in list(fit3[1][epsilon][angle].values())], marker = "o", label = "fit3")
-            plt.plot(list(fit4[1][epsilon][angle].keys()), [x[2] for x in list(fit4[1][epsilon][angle].values())], marker = "o", label = "fit4")
+            plt.plot(list(fit1[1][epsilon][angle].keys()), [x[2] for x in list(fit1[1][epsilon][angle].values())], marker = "o", markersize = 0.5,  linewidth = 0.5, label = "fit1")
+            plt.plot(list(fit2[1][epsilon][angle].keys()), [x[2] for x in list(fit2[1][epsilon][angle].values())], marker = "o",markersize = 0.5, linewidth= 0.5, label = "fit2")
+            #plt.plot(list(fit3[1][epsilon][angle].keys()), [x[2] for x in list(fit3[1][epsilon][angle].values())], marker = "o",markersize = 0.5, linewidth = 0.5, label = "fit3")
+            plt.plot(list(fit4[1][epsilon][angle].keys()), [x[2] for x in list(fit4[1][epsilon][angle].values())], marker = "o",markersize = 0.5, linewidth = 0.5, label = "fit4")
             plt.xlabel("k value")
             plt.ylabel("Chi-Squared value")
-            plt.title("Fit Performance Comparison (Chi-Squared based)")
+            plt.title("Fit Performance Comparison (Chi-Squared based), $\epsilon = {}$".format(epsilon[2]))
             plt.legend()
             plt.tight_layout()
-            plt.savefig("img/fit_performance_comparison_epsilon{}.png".format(epsilon))
+            plt.savefig("img/fit_performance_comparison_epsilon{}.png".format(epsilon[2]), dpi = DPI)
             plt.clf()
 
 compare_fit_chi_squared(fit_parameters1, fit_parameters2, fit_parameters3, fit_parameters4)
+
+#%%
+print("Is This Loss?")
+
+# Part1 : precise loss
+weights = np.array([[intensity_zero(r * np.cos(theta), r * np.sin(theta)) for r in np.linspace(dx, 1, int(1/dx))] for theta in angles])
+
+# TODO :: IMPROVE THIS MEASURE!!
+measure = lambda weight_list : np.sum(weight_list)
+
+I0 = measure(weights)
+
+loss_precise = {}
+for epsilon in data:
+    I_evolution = [1.]
+    for turn in n_turns:
+        a = 0
+        for angle in data[epsilon]:
+            j = 0
+            while data[epsilon][angle][j] >= turn:
+                j += 1
+            weights[a][j:] = 0
+            a += 1
+        I_evolution.append(measure(weights) / I0)
+    loss_precise[epsilon] = I_evolution
+
+# Part2 : D(N) Loss
+
+loss_D = {}
+for epsilon in dynamic_aperture[1]:
+    I_evolution = [1.]
+    for angle in dynamic_aperture[1][epsilon]:
+        for turn in sorted(dynamic_aperture[1][epsilon][angle][0]):
+            I_evolution.append(intensity_from_dynamic_aperture(dynamic_aperture[1][epsilon][angle][0][turn]))
+    loss_D[epsilon] = I_evolution
+
+#%%
+print("Plot Loss.")
+
+for epsilon in loss_precise:
+    plt.plot([0] + n_turns, loss_precise[epsilon], label="Precise loss")
+    plt.plot([0] + n_turns, loss_D[epsilon], label="D computed loss")
+    plt.xlabel("N turns")
+    plt.xscale("log")
+    plt.ylabel("Relative Luminosity (A.U.)")
+    plt.title("Comparison of loss measures, $\epsilon = {:2.2f}$".format(epsilon))
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("loss_eps{:2.2f}.png".format(epsilon))
+
+
 #%%
 print("Big Guns")
 
