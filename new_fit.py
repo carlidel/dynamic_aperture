@@ -1,5 +1,8 @@
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import pickle
 from scipy.optimize import curve_fit
 import png_to_jpg as converter
@@ -10,7 +13,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 np.set_printoptions(precision=3)
-DPI = 300
+DPI = 100
 
 # Parameters placed in the simulation
 
@@ -349,50 +352,62 @@ print("Is This Loss?")
 
 # Part1 : precise loss
 weights = np.array([[intensity_zero(r * np.cos(theta), r * np.sin(theta)) for r in np.linspace(dx, 1, int(1/dx))] for theta in angles])
+lenghts = np.array([1. for i in range(102)])
 
-# TODO :: IMPROVE THIS MEASURE!!
-measure = lambda weight_list : np.sum(weight_list)
-
-I0 = measure(weights)
-
+'''# TODO :: IMPROVE THIS MEASURE!!
+def measure(lenght_list):
+    # simple trapezoidal thingy
+    return np.sum([(intensity_from_dynamic_aperture(lenght_list[i]) + intensity_from_dynamic_aperture(lenght_list[i + 1]))*(dtheta * 0.5) for i in range(len(lenght_list) - 1)])
+    
+I0 = measure(lenghts)
+weights0 = weights
 loss_precise = {}
+weights_precise = {}
 for epsilon in data:
-    I_evolution = [1.]
+    I_evolution = [I0]
+    W_evolution = [weights0]
+    weights = weights0
     for turn in n_turns:
         a = 0
         for angle in data[epsilon]:
             j = 0
             while data[epsilon][angle][j] >= turn:
                 j += 1
+            lenghts[a] = (j - 1) * dx
             weights[a][j:] = 0
             a += 1
-        I_evolution.append(measure(weights) / I0)
+        #print(lenghts)
+        I_evolution.append(measure(lenghts) / I0)
+        W_evolution.append(weights)
     loss_precise[epsilon] = I_evolution
+    weights_precise[epsilon] = W_evolution'''
 
 # Part2 : D(N) Loss
 
 loss_D = {}
 for epsilon in dynamic_aperture[1]:
-    I_evolution = [1.]
+    I_evolution = []
     for angle in dynamic_aperture[1][epsilon]:
         for turn in sorted(dynamic_aperture[1][epsilon][angle][0]):
-            I_evolution.append(intensity_from_dynamic_aperture(dynamic_aperture[1][epsilon][angle][0][turn]))
+            I_evolution.append(intensity_from_dynamic_aperture(dynamic_aperture[1][epsilon][angle][0][turn])*np.pi*0.5)
     loss_D[epsilon] = I_evolution
 
 #%%
 print("Plot Loss.")
 
-for epsilon in loss_precise:
-    plt.plot([0] + n_turns, loss_precise[epsilon], label="Precise loss")
-    plt.plot([0] + n_turns, loss_D[epsilon], label="D computed loss")
+for epsilon in loss_D:
+    #plt.plot(np.concatenate((np.array([0]),n_turns)), loss_precise[epsilon], label="Precise loss")
+    plt.plot(n_turns, loss_D[epsilon], label="D computed loss")
     plt.xlabel("N turns")
     plt.xscale("log")
+    plt.xlim(1000,10000000)
     plt.ylabel("Relative Luminosity (A.U.)")
-    plt.title("Comparison of loss measures, $\epsilon = {:2.2f}$".format(epsilon))
+    plt.ylim(0,1)
+    plt.title("Comparison of loss measures, $\epsilon = {:2.0f}$".format(epsilon[2]))
     plt.legend()
     plt.tight_layout()
-    plt.savefig("loss_eps{:2.2f}.png".format(epsilon))
-
+    plt.savefig("img/loss_eps{:2.2f}.png".format(epsilon[2]), dpi=DPI)
+    plt.clf()
 
 #%%
 print("Big Guns")

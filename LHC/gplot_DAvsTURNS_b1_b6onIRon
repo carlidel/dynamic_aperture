@@ -1,0 +1,82 @@
+set terminal postscript enhanced color 16
+set output "plot.DAtopenergy.model.DAvsTURNS.b1.b6onIRon.eps"
+
+sizex=1.0
+sizey=1.0
+
+set size sizex,sizey
+set origin 0,0
+
+unset key
+set key samplen 1
+set key top right
+
+set tmargin 0
+set bmargin 0
+set lmargin 0
+set rmargin 0
+
+mytmargin=0.5
+mybmargin=3
+mylmargin=8
+myrmargin=1
+
+mysamplen=1
+
+linewidth=1
+pointsize=0.4
+pointtype=7
+
+
+
+set multiplot
+######################################################
+#### COMPARING MESURED AND SIM DA
+xmin=1
+xmax=2e6
+ymin=4.0
+ymax=15
+######################################################
+set size sizex,sizey
+set origin 0,0
+set key top right height 1.5 width 3 spacing 1.5
+
+
+set tmargin mytmargin
+set bmargin mybmargin
+set lmargin mylmargin
+set rmargin myrmargin
+
+set ytics 2
+set mytics 2
+set format x "10^{%T}"
+set mxtics 10
+
+set ylabel "D(N)  [{/Symbol s}]"
+set xlabel "N"
+
+set logscale x
+set samples 1000
+
+
+
+p[xmin:xmax][ymin:ymax]\
+1/0 w l lw 10 lc rgb "#6495ED" t 'H blowup',\
+1/0 w l lw 10 lc rgb "#F08080" t 'V blowup',\
+1/0 w l lw 10 lc 9 t 'HV blowup'
+
+
+unset border
+unset xtics
+unset ytics
+unset label
+unset xlabel
+unset ylabel
+
+fileH(n)  = sprintf("data_summary_H/DA.6.B1topenergy.b6onIRon.seed%d.out", n)
+fileV(n)  = sprintf("data_summary_V/DA.6.B1topenergy.b6onIRon.seed%d.out", n)
+fileHV(n) = sprintf("data_summary_HV/DA.6.B1topenergy.b6onIRon.seed%d.out", n)
+
+p [xmin:xmax][ymin:ymax] for [i=1:60] fileHV(i) u ($16):($8) w l lt 1 lw 1 lc 9 t ''
+p [xmin:xmax][ymin:ymax] for [i=1:60] fileH(i)  u ($16):($8) w l lt 1 lw 1 lc rgb "#6495ED" t ''
+p [xmin:xmax][ymin:ymax] for [i=1:60] fileV(i)  u ($16):($8) w l lt 1 lw 1 lc rgb "#F08080" t ''
