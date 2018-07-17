@@ -13,7 +13,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 np.set_printoptions(precision=3)
-DPI = 100
+DPI = 300
 
 # Parameters placed in the simulation
 
@@ -31,14 +31,15 @@ n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 2500, 3000, 3500, 4000, 
 # Partition list for basic angle partitioning
 
 partition_lists = np.array([[0, np.pi / 2]])
-'''
+
 partition_lists = np.array([[0, np.pi / 2], # Always always keep this one 
-                           [0, np.pi / 4, np.pi / 2], 
-                           [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], 
-                          [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
-                         [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
-                        [0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12, np.pi * 5 / 12, np.pi / 2]])
-'''
+                            [0, np.pi / 4, np.pi / 2], 
+                            [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], 
+                            #[0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
+                            #[0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
+                            #[0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12, np.pi * 5 / 12, np.pi / 2]
+                            ])
+
 
 # Convolution parameters for advanced angle paritioning
 
@@ -52,14 +53,6 @@ k_min = -5.
 n_k = 200
 k_possible_values = np.linspace(k_min, k_max, n_k)
 k_error = k_possible_values[1] - k_possible_values[0]
-
-# Loss parameters
-
-def intensity_zero(x, y, sigma_x = 1, sigma_y = 1):
-    return (1 / (2 * np.pi * sigma_x * sigma_y)) * np.exp(-((x**2/(2*sigma_x**2))+(y**2/(2*sigma_y**2))))
-
-def intensity_from_dynamic_aperture(D):
-    return 1 - np.exp(- D**2 / 2)
 
 # Function Definitions
 
@@ -351,63 +344,100 @@ compare_fit_chi_squared(fit_parameters1, fit_parameters2, fit_parameters3, fit_p
 #%%
 print("Is This Loss?")
 
-# Part1 : precise loss
-weights = np.array([[intensity_zero(r * np.cos(theta), r * np.sin(theta)) for r in np.linspace(dx, 1, int(1/dx))] for theta in angles])
-lenghts = np.array([1. for i in range(102)])
+from scipy import integrate
 
-'''# TODO :: IMPROVE THIS MEASURE!!
-def measure(lenght_list):
-    # simple trapezoidal thingy
-    return np.sum([(intensity_from_dynamic_aperture(lenght_list[i]) + intensity_from_dynamic_aperture(lenght_list[i + 1]))*(dtheta * 0.5) for i in range(len(lenght_list) - 1)])
+# Intensity functions
+
+def intensity_zero(x, y, sigma_x = 1, sigma_y = 1):
+    return (1 / (2 * np.pi * sigma_x * sigma_y)) * np.exp(-((x**2/(2*sigma_x**2))+(y**2/(2*sigma_y**2))))
+
+def relative_intensity_D_law(D):
+    return 1 - np.exp(- D**2 / 2)
+
+def grid_intensity(grid):
+    # Integrare con Simpson prima in un verso, poi nell'altro
+    return integrate.trapz(np.asarray([integrate.simps(line, dx=dx) for line in grid]), dx=dx)
+    # Oppure sommare senza pietà?
+    #return np.sum(grid)
     
-I0 = measure(lenghts)
-weights0 = weights
+
+# Weights at beginning
+weights = np.array([[intensity_zero(x * dx, y * dx) for x in range(80)] for y in range(80)])
+
+# PRECISE
+
 loss_precise = {}
-weights_precise = {}
-for epsilon in data:
-    I_evolution = [I0]
-    W_evolution = [weights0]
-    weights = weights0
-    for turn in n_turns:
-        a = 0
-        for angle in data[epsilon]:
-            j = 0
-            while data[epsilon][angle][j] >= turn:
-                j += 1
-            lenghts[a] = (j - 1) * dx
-            weights[a][j:] = 0
-            a += 1
-        #print(lenghts)
-        I_evolution.append(measure(lenghts) / I0)
-        W_evolution.append(weights)
-    loss_precise[epsilon] = I_evolution
-    weights_precise[epsilon] = W_evolution'''
+for epsilon in lin_data:
+    intensity_evolution = [0.25]
+    for time in n_turns:
+        mask = np.copy(lin_data[epsilon])
+        mask[mask < time] = 0
+        mask[mask >= time] = 1
+        masked_weights = weights * mask
+        intensity_evolution.append(grid_intensity(masked_weights))
+    loss_precise[epsilon] = np.asarray(intensity_evolution) * 4
 
-# Part2 : D(N) Loss
-
+# D formula
 loss_D = {}
 for epsilon in dynamic_aperture[1]:
-    I_evolution = []
+    intensity_evolution = [0.25]
     for angle in dynamic_aperture[1][epsilon]:
-        for turn in sorted(dynamic_aperture[1][epsilon][angle][0]):
-            I_evolution.append(intensity_from_dynamic_aperture(dynamic_aperture[1][epsilon][angle][0][turn])*np.pi*0.5)
-    loss_D[epsilon] = I_evolution
+        for time in dynamic_aperture[1][epsilon][angle][0]:
+            limit = dynamic_aperture[1][epsilon][angle][0][time]
+            mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= limit for x in range(80)] for y in range(80)], dtype = int)
+            masked_weights = weights * mask
+            intensity_evolution.append(grid_intensity(masked_weights))
+    loss_D[epsilon] = np.asarray(intensity_evolution) * 4
 
+# D2 formula
+loss_D2 = {}
+def select_angle2(x, y):
+    return (np.pi / 8) if np.arctan2(y,x) < np.pi / 4 else (np.pi * 3 / 8)
+
+for epsilon in dynamic_aperture[2]:
+    intensity_evolution = [0.25]
+    for time in n_turns:
+        mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= dynamic_aperture[2][epsilon][select_angle2(x,y)][0][time] for x in range(80)] for y in range(80)], dtype = int)
+        masked_weights = weights * mask
+        intensity_evolution.append(grid_intensity(masked_weights))
+    loss_D2[epsilon] = np.asarray(intensity_evolution) * 4
+
+# D3 formula
+loss_D3 = {}
+def select_angle3(x, y):
+    temp = np.arctan2(y,x)
+    if temp < np.pi / (2 * 3):
+        return np.pi / (4 * 3)
+    elif temp < np.pi / (3):
+        return (np.pi / (2 * 3) + np.pi / (3)) / 2
+    else:
+        return (np.pi / (3) + np.pi / 2) / 2
+
+for epsilon in dynamic_aperture[3]:
+    intensity_evolution = [0.25]
+    for time in n_turns:
+        mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= dynamic_aperture[3][epsilon][select_angle3(x,y)][0][time] for x in range(80)] for y in range(80)], dtype = int)
+        masked_weights = weights * mask
+        intensity_evolution.append(grid_intensity(masked_weights))
+    loss_D3[epsilon] = np.asarray(intensity_evolution) * 4
+        
 #%%
 print("Plot Loss.")
 
 for epsilon in loss_D:
-    #plt.plot(np.concatenate((np.array([0]),n_turns)), loss_precise[epsilon], label="Precise loss")
-    plt.plot(n_turns, loss_D[epsilon], label="D computed loss")
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_precise[epsilon], linewidth = 0.5, label="Precise loss")
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[epsilon], linewidth = 0.5, label="D computed loss")
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D2[epsilon], linewidth = 0.5, label="D computed loss (parted in 2 angles)")
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D3[epsilon], linewidth = 0.5, label="D computed loss (parted in 3 angles)")
     plt.xlabel("N turns")
     plt.xscale("log")
     plt.xlim(1000,10000000)
     plt.ylabel("Relative Luminosity (A.U.)")
-    plt.ylim(0,1)
+    plt.ylim(0,0.4)
     plt.title("Comparison of loss measures, $\epsilon = {:2.0f}$".format(epsilon[2]))
     plt.legend()
     plt.tight_layout()
-    plt.savefig("img/loss_eps{:2.2f}.png".format(epsilon[2]), dpi=DPI)
+    plt.savefig("img/loss_eps{:2.0f}.png".format(epsilon[2]), dpi=DPI)
     plt.clf()
 
 #%%
@@ -551,6 +581,7 @@ for key in data:
     plt.ylabel("Y coordinate (A.U.)")
     plt.xlim(0,0.8)
     plt.ylim(0,0.8)
+    plt.grid(True)
     plt.title("Stable Region\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(key[0], key[1], key[2]))
     plt.tight_layout()
     plt.savefig("img/stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(key[2], key[0], key[1]), dpi = DPI)
@@ -581,10 +612,20 @@ for epsilon in lin_data:
     plt.ylabel("Y coordinate (A.U.)")
     plt.xlim(0,0.8)
     plt.ylim(0,0.8)
+    plt.grid(True)
     plt.title("Stable Region (grid)\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(epsilon[0], epsilon[1], epsilon[2]))
     plt.tight_layout()
     plt.savefig("img/grid_stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
     plt.clf()
+
+#%%
+# Concatenate
+import cv2
+for epsilon in lin_data:
+    img1 = cv2.imread("img/grid_stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]))
+    img2 = cv2.imread("img/stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]))
+    vis = np.concatenate((img1,img2), axis=1)
+    cv2.imwrite("img/concatenated_stability_eps{:2.0f}.png".format(epsilon[2]),vis)
 
 #%%
 # Convert to JPEG

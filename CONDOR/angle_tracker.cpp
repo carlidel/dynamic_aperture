@@ -116,26 +116,20 @@ std::vector<double> * modulated_radius_scan(double theta, double dx, double epsi
 	return v;
 }
 
-std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int min_turns = 1000)
+std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int n_scans = 80)
 {
 	std::vector<double> * v = new std::vector<double>();
 
-	unsigned int actual_turns = max_turns;
-	int temp;
-	int i = -1;
-	
-	while(actual_turns >= min_turns)
+	for(unsigned i = 0, i < n_scans, i++)
 	{
-		i++;
 		temp = modulated_particle(i * dx, y, actual_turns, epsilon);
 		if (temp != -1)
 		{
-			actual_turns = temp;
-			v->push_back(actual_turns);
+			v->push_back(temp);
 		}
 		else
 		{
-			v->push_back(actual_turns);
+			v->push_back(max_turns);
 		}
 	}
 	return v;
