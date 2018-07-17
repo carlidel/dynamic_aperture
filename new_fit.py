@@ -201,6 +201,7 @@ def select_best_fit(parameters, params_are_4 = False):
 print("Load data")
 
 data = pickle.load(open("radscan_dx01_firstonly_dictionary.pkl", "rb"))
+lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 
 #%%
 print("Fit on basic partitions")
@@ -549,10 +550,40 @@ for key in data:
     plt.xlabel("X coordinate (A.U.)")
     plt.ylabel("Y coordinate (A.U.)")
     plt.xlim(0,0.8)
-    plt.ylim(0,0.7)
+    plt.ylim(0,0.8)
     plt.title("Stable Region\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(key[0], key[1], key[2]))
     plt.tight_layout()
     plt.savefig("img/stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(key[2], key[0], key[1]), dpi = DPI)
+    plt.clf()
+
+#%%
+print("Draw 2D stability maps from linscan")
+
+stability_levels = np.array([1000, 10000, 100000, 1000000, 10000000])
+
+for epsilon in lin_data:
+    for level in stability_levels:
+        x = []
+        y = []
+        x.append(0.)
+        y.append(0.)
+        i = -1
+        for line in lin_data[epsilon]:
+            i += 1
+            j = 0
+            while line[j] >= level:
+                j += 1
+            x.append((j - 1) * dx)
+            y.append(i * dx)
+        plt.fill(x, y, label="$turns = {}$".format(level))
+    plt.legend()
+    plt.xlabel("X coordinate (A.U.)")
+    plt.ylabel("Y coordinate (A.U.)")
+    plt.xlim(0,0.8)
+    plt.ylim(0,0.8)
+    plt.title("Stable Region (grid)\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(epsilon[0], epsilon[1], epsilon[2]))
+    plt.tight_layout()
+    plt.savefig("img/grid_stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
     plt.clf()
 
 #%%
