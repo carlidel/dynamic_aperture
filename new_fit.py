@@ -30,15 +30,15 @@ n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 2500, 3000, 3500, 4000, 
 
 # Partition list for basic angle partitioning
 
-partition_lists = np.array([[0, np.pi / 2]])
+partition_lists = [[0, np.pi / 2]]
 
-partition_lists = np.array([[0, np.pi / 2], # Always always keep this one 
-                            [0, np.pi / 4, np.pi / 2], 
-                            [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], 
-                            #[0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
-                            #[0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
-                            #[0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12, np.pi * 5 / 12, np.pi / 2]
-                            ])
+partition_lists = [[0, np.pi / 2], # Always always keep this one 
+                   [0, np.pi / 4, np.pi / 2], 
+                   [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], 
+                   [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
+                   [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
+                   [0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12, np.pi * 5 / 12, np.pi / 2]
+                  ]
 
 
 # Convolution parameters for advanced angle paritioning
@@ -377,58 +377,33 @@ for epsilon in lin_data:
         intensity_evolution.append(grid_intensity(masked_weights))
     loss_precise[epsilon] = np.asarray(intensity_evolution) * 4
 
-# D formula
-loss_D = {}
-for epsilon in dynamic_aperture[1]:
-    intensity_evolution = [0.25]
-    for angle in dynamic_aperture[1][epsilon]:
-        for time in dynamic_aperture[1][epsilon][angle][0]:
-            limit = dynamic_aperture[1][epsilon][angle][0][time]
-            mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= limit for x in range(80)] for y in range(80)], dtype = int)
+# D generalized
+loss_D = []
+
+def select_angle(x, y, partition):
+    for i in range(len(partition) - 1):
+        if np.arctan2(y, x) <= partition[i + 1]:
+            return (partition[i] + partition[i+1]) / 2
+
+for partition in partition_lists:
+    temp_loss = {}
+    for epsilon in dynamic_aperture[len(partition) - 1]:
+        intensity_evolution = [0.25]
+        for time in n_turns:
+            mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= dynamic_aperture[len(partition) - 1][epsilon][select_angle(x,y,partition)][0][time] for x in range(80)] for y in range(80)], dtype = int)
             masked_weights = weights * mask
             intensity_evolution.append(grid_intensity(masked_weights))
-    loss_D[epsilon] = np.asarray(intensity_evolution) * 4
+        temp_loss[epsilon] = np.asarray(intensity_evolution) * 4
+    loss_D.append(temp_loss)
 
-# D2 formula
-loss_D2 = {}
-def select_angle2(x, y):
-    return (np.pi / 8) if np.arctan2(y,x) < np.pi / 4 else (np.pi * 3 / 8)
-
-for epsilon in dynamic_aperture[2]:
-    intensity_evolution = [0.25]
-    for time in n_turns:
-        mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= dynamic_aperture[2][epsilon][select_angle2(x,y)][0][time] for x in range(80)] for y in range(80)], dtype = int)
-        masked_weights = weights * mask
-        intensity_evolution.append(grid_intensity(masked_weights))
-    loss_D2[epsilon] = np.asarray(intensity_evolution) * 4
-
-# D3 formula
-loss_D3 = {}
-def select_angle3(x, y):
-    temp = np.arctan2(y,x)
-    if temp < np.pi / (2 * 3):
-        return np.pi / (4 * 3)
-    elif temp < np.pi / (3):
-        return (np.pi / (2 * 3) + np.pi / (3)) / 2
-    else:
-        return (np.pi / (3) + np.pi / 2) / 2
-
-for epsilon in dynamic_aperture[3]:
-    intensity_evolution = [0.25]
-    for time in n_turns:
-        mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= dynamic_aperture[3][epsilon][select_angle3(x,y)][0][time] for x in range(80)] for y in range(80)], dtype = int)
-        masked_weights = weights * mask
-        intensity_evolution.append(grid_intensity(masked_weights))
-    loss_D3[epsilon] = np.asarray(intensity_evolution) * 4
-        
 #%%
 print("Plot Loss.")
 
-for epsilon in loss_D:
+for epsilon in loss_D[0]:
     plt.plot(np.concatenate((np.array([0]),n_turns)), loss_precise[epsilon], linewidth = 0.5, label="Precise loss")
-    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[epsilon], linewidth = 0.5, label="D computed loss")
-    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D2[epsilon], linewidth = 0.5, label="D computed loss (parted in 2 angles)")
-    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D3[epsilon], linewidth = 0.5, label="D computed loss (parted in 3 angles)")
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[0][epsilon], linewidth = 0.5, label="D computed loss")
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[1][epsilon], linewidth = 0.5, label="D computed loss (parted in 2 angles)")
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[2][epsilon], linewidth = 0.5, label="D computed loss (parted in 3 angles)")
     plt.xlabel("N turns")
     plt.xscale("log")
     plt.xlim(1000,10000000)
