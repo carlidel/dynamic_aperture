@@ -120,9 +120,9 @@ std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon,
 {
 	std::vector<double> * v = new std::vector<double>();
 
-	for(unsigned i = 0, i < n_scans, i++)
+	for(unsigned i = 0; i < n_scans; i++)
 	{
-		temp = modulated_particle(i * dx, y, actual_turns, epsilon);
+		double temp = modulated_particle(i * dx, y, max_turns, epsilon);
 		if (temp != -1)
 		{
 			v->push_back(temp);
