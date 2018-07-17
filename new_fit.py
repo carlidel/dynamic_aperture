@@ -285,7 +285,7 @@ def plot_fit_basic(numfit, best_fit, N, epsilon, angle, n_turns, dynamic_apertur
     	plt.plot([],[],'', linewidth=0, label = "$k = {:.2} \pm {:.2}$".format(best_fit[6], k_error))
     plt.legend(prop={"size" : 7})
     plt.tight_layout()
-    plt.savefig("img/fit{}_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(numfit, epsilon[2], epsilon[0], epsilon[1],angle,len(partition_list) - 1), dpi = DPI)
+    plt.savefig("img/fit{}_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".format(numfit, epsilon[2], epsilon[0], epsilon[1],angle,1), dpi = DPI) ## for now partition list is set to 1
     plt.clf()
 
 
