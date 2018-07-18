@@ -110,10 +110,6 @@ function_1k = lambda x, A, B, k : A + B / np.log10(x) ** k
 
 function_2k = lambda x, A, B, k : B / (np.log10(x) - A) ** k
 
-function_3k = lambda x, A, B, k : A * (1 + B / (np.log10(x)) ** k)
-
-function_4k = lambda x, A, B, C, k : A + B / (np.log10(x) - C) ** k
-
 def non_linear_fit(data, n_turns, method = 1):
     function_1 = lambda x, A, B : A + B / np.log10(x) ** k
     chi_squared_1 = lambda x, y, sigma, popt : (1 / (len(n_turns) - 3)) * np.sum(((y - function_1(x, popt[0], popt[1])) / sigma)**2)
@@ -121,12 +117,6 @@ def non_linear_fit(data, n_turns, method = 1):
     function_2 = lambda x, A, B : B / (np.log10(x) - A) ** k   
     chi_squared_2 = lambda x, y, sigma, popt : (1 / (len(n_turns) - 3)) * np.sum(((y - function_2(x, popt[0], popt[1])) / sigma)**2)
     
-    function_3 = lambda x, A, B : A * (1 + B / (np.log10(x)) ** k)
-    chi_squared_3 = lambda x, y, sigma, popt : (1 / (len(n_turns) - 3)) * np.sum(((y - function_3(x, popt[0], popt[1])) / sigma)**2)
-    
-    function_4 = lambda x, A, B, C : A + B / (np.log10(x) - C) ** k   
-    chi_squared_4 = lambda x, y, sigma, popt : (1 / (len(n_turns) - 3)) * np.sum(((y - function_4(x, popt[0], popt[1], popt[2])) / sigma)**2)
-
     if method == 1:
         explore_k = {}
         for number in k_possible_values:
@@ -150,32 +140,6 @@ def non_linear_fit(data, n_turns, method = 1):
                 explore_k[k] = (popt, pcov, chi_squared_2(n_turns, [data[0][i] for i in n_turns], [data[1][i] for i in n_turns], popt))
             except RuntimeError:
                 #print(k, "error2")
-                pass
-        #print(len(explore_k))
-        assert len(explore_k) > 0
-        return explore_k
-    elif method == 3:
-        explore_k = {}
-        for number in k_possible_values:
-            k = number
-            try:
-                popt, pcov = curve_fit(function_3, n_turns, [data[0][i] for i in n_turns], p0=[0.,1.], sigma=[data[1][i] for i in n_turns])
-                explore_k[k] = (popt, pcov, chi_squared_3(n_turns, [data[0][i] for i in n_turns], [data[1][i] for i in n_turns], popt))
-            except RuntimeError:
-                #print(k, "error3")
-                pass
-        #print(len(explore_k))
-        assert len(explore_k) > 0
-        return explore_k
-    elif method == 4:
-        explore_k = {}
-        for number in k_possible_values:
-            k = number
-            try:
-                popt, pcov = curve_fit(function_4, n_turns, [data[0][i] for i in n_turns], p0=[0.,1.,1.], sigma=[data[1][i] for i in n_turns])
-                explore_k[k] = (popt, pcov, chi_squared_4(n_turns, [data[0][i] for i in n_turns], [data[1][i] for i in n_turns], popt))
-            except RuntimeError:
-                #print(k, "error4")
                 pass
         #print(len(explore_k))
         assert len(explore_k) > 0
@@ -216,8 +180,6 @@ print("Fit on basic partitions")
 
 fit_parameters1 = {}    # fit1
 fit_parameters2 = {}    # fit2
-fit_parameters3 = {}    # fit3
-fit_parameters4 = {}    # fit4
 
 for partition_list in partition_lists:
     print(partition_list)
@@ -245,29 +207,6 @@ for partition_list in partition_lists:
         
     fit_parameters2[len(partition_list)-1] = fit_parameters
     
-    # fit3
-
-    fit_parameters = {}
-
-    for epsilon in dynamic_aperture[len(partition_list)-1]:
-        temp = {}
-        for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
-            temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=3)
-        fit_parameters[epsilon] = temp
-        
-    fit_parameters3[len(partition_list)-1] = fit_parameters
-    
-    # fit4
-
-    fit_parameters = {}
-
-    for epsilon in dynamic_aperture[len(partition_list)-1]:
-        temp = {}
-        for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
-            temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=4)
-        fit_parameters[epsilon] = temp
-        
-    fit_parameters4[len(partition_list)-1] = fit_parameters
 
 #%%
 def plot_fit_basic(numfit, best_fit, N, epsilon, angle, n_turns, dynamic_aperture, func, y_bar = False, params_are_4 = False):
@@ -312,32 +251,15 @@ for epsilon in fit_parameters2[N]:
 		best_fit = select_best_fit(fit_parameters2[N][epsilon][angle])
 		plot_fit_basic(2, best_fit, N, epsilon, angle, n_turns, dynamic_aperture, function_2k, False)
 
-print("Plot fit 3, only partition 1")
-N = 1
-
-for epsilon in fit_parameters3[N]:
-	for angle in fit_parameters3[N][epsilon]:
-		best_fit = select_best_fit(fit_parameters3[N][epsilon][angle])
-		plot_fit_basic(3, best_fit, N, epsilon, angle, n_turns, dynamic_aperture, function_3k, True)
-
-print("Plot fit 4, only partition 1, 4 parameters")
-N = 1
-
-for epsilon in fit_parameters4[N]:
-    for angle in fit_parameters4[N][epsilon]:
-        best_fit = select_best_fit(fit_parameters4[N][epsilon][angle], True)
-        plot_fit_basic(4, best_fit, N, epsilon, angle, n_turns, dynamic_aperture, function_4k, True, True)
         
 #%%
 print("Plot Fit Performances.")        
         
-def compare_fit_chi_squared(fit1, fit2, fit3, fit4):
+def compare_fit_chi_squared(fit1, fit2):
     for epsilon in fit1[1]:
         for angle in fit1[1][epsilon]:
             plt.plot(list(fit1[1][epsilon][angle].keys()), [x[2] for x in list(fit1[1][epsilon][angle].values())], marker = "o", markersize = 0.5,  linewidth = 0.5, label = "fit1")
             plt.plot(list(fit2[1][epsilon][angle].keys()), [x[2] for x in list(fit2[1][epsilon][angle].values())], marker = "o",markersize = 0.5, linewidth= 0.5, label = "fit2")
-            #plt.plot(list(fit3[1][epsilon][angle].keys()), [x[2] for x in list(fit3[1][epsilon][angle].values())], marker = "o",markersize = 0.5, linewidth = 0.5, label = "fit3")
-            plt.plot(list(fit4[1][epsilon][angle].keys()), [x[2] for x in list(fit4[1][epsilon][angle].values())], marker = "o",markersize = 0.5, linewidth = 0.5, label = "fit4")
             plt.xlabel("k value")
             plt.ylabel("Chi-Squared value")
             plt.title("Fit Performance Comparison (Chi-Squared based), $\epsilon = {}$".format(epsilon[2]))
@@ -346,7 +268,7 @@ def compare_fit_chi_squared(fit1, fit2, fit3, fit4):
             plt.savefig("img/fit_performance_comparison_epsilon{}.png".format(epsilon[2]), dpi = DPI)
             plt.clf()
 
-compare_fit_chi_squared(fit_parameters1, fit_parameters2, fit_parameters3, fit_parameters4)
+compare_fit_chi_squared(fit_parameters1, fit_parameters2)
 
 #%%
 print("Is This Loss?")
@@ -435,13 +357,9 @@ for epsilon in data:
 
 conv_fit_parameters1 = {}    # fit1
 conv_fit_parameters2 = {}    # fit2
-conv_fit_parameters3 = {}    # fit3
-conv_fit_parameters4 = {}    # fit4
 
 best_conv_fit_parameters1 = {}    # fit1
 best_conv_fit_parameters2 = {}    # fit2
-best_conv_fit_parameters3 = {}    # fit3
-best_conv_fit_parameters4 = {}    # fit4
 
 print("fit 1")
 for epsilon in conv_dynamic_aperture:
@@ -468,32 +386,6 @@ for epsilon in conv_fit_parameters2:
     for angle in conv_fit_parameters2[epsilon]:
         temp[angle] = select_best_fit(conv_fit_parameters2[epsilon][angle])
     best_conv_fit_parameters2[epsilon] = temp
-
-print("fit 3")
-for epsilon in conv_dynamic_aperture:
-    temp = {}
-    for angle in conv_dynamic_aperture[epsilon]:
-        temp[angle] = non_linear_fit(conv_dynamic_aperture[epsilon][angle], n_turns, method = 3)
-    conv_fit_parameters3[epsilon] = temp
-
-for epsilon in conv_fit_parameters3:
-    temp = {}
-    for angle in conv_fit_parameters3[epsilon]:
-        temp[angle] = select_best_fit(conv_fit_parameters3[epsilon][angle])
-    best_conv_fit_parameters3[epsilon] = temp
-
-print("fit 4")
-for epsilon in conv_dynamic_aperture:
-    temp = {}
-    for angle in conv_dynamic_aperture[epsilon]:
-        temp[angle] = non_linear_fit(conv_dynamic_aperture[epsilon][angle], n_turns, method = 4)
-    conv_fit_parameters4[epsilon] = temp
-
-for epsilon in conv_fit_parameters4:
-    temp = {}
-    for angle in conv_fit_parameters4[epsilon]:
-        temp[angle] = select_best_fit(conv_fit_parameters4[epsilon][angle], True)
-    best_conv_fit_parameters4[epsilon] = temp
 
 #%%
 print("Fit Parameter Comparison")
@@ -535,14 +427,6 @@ plot_fit_comparison(1, best_conv_fit_parameters1)
 print("Comparison 2")
 
 plot_fit_comparison(2, best_conv_fit_parameters2)
-
-print("Comparison 3")
-
-plot_fit_comparison(3, best_conv_fit_parameters3)
-
-print("Comparison 4")
-
-plot_fit_comparison(4, best_conv_fit_parameters4, True)
 
 #%%
 print("Draw 2D stability maps")
@@ -593,7 +477,7 @@ for epsilon in lin_data:
     plt.grid(True)
     plt.title("Stable Region (grid scan), number of turns\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(epsilon[0], epsilon[1], epsilon[2]))
     plt.colorbar()
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.savefig("img/grid_stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
     plt.clf()
 
