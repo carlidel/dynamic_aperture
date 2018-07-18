@@ -34,11 +34,11 @@ n_turns = np.array([1000, 1200, 1400, 1600, 1800, 2000, 2500, 3000, 3500, 4000, 
 partition_lists = [[0, np.pi / 2]]
 
 partition_lists = [[0, np.pi / 2], # Always always keep this one 
-                   [0, np.pi / 4, np.pi / 2], 
-                   [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], 
-                   [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
-                   [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
-                   [0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12, np.pi * 5 / 12, np.pi / 2]
+                   #[0, np.pi / 4, np.pi / 2], 
+                   #[0, np.pi / (2 * 3), np.pi / (3), np.pi / 2], 
+                   #[0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
+                   #[0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
+                   #[0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12, np.pi * 5 / 12, np.pi / 2]
                   ]
 
 
@@ -180,33 +180,43 @@ print("Fit on basic partitions")
 
 fit_parameters1 = {}    # fit1
 fit_parameters2 = {}    # fit2
+best_fit_parameters1 = {}
+best_fit_parameters2 = {}
 
 for partition_list in partition_lists:
     print(partition_list)
     # fit1
 
     fit_parameters = {}
+    best_fit_parameters = {}
 
     for epsilon in dynamic_aperture[len(partition_list)-1]:
         temp = {}
+        best = {}
         for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
             temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=1)
+            best = select_best_fit(temp[angle])
         fit_parameters[epsilon] = temp
+        best_fit_parameters[epsilon] = best
         
     fit_parameters1[len(partition_list)-1] = fit_parameters
-
+    best_fit_parameters1[len(partition_list)-1] = best_fit_parameters
     # fit2
 
     fit_parameters = {}
+    best_fit_parameters = {}
 
     for epsilon in dynamic_aperture[len(partition_list)-1]:
         temp = {}
+        best = {}
         for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
             temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=2)
+            best = select_best_fit(temp[angle])
         fit_parameters[epsilon] = temp
+        best_fit_parameters[epsilon] = best
         
     fit_parameters2[len(partition_list)-1] = fit_parameters
-    
+    best_fit_parameters2[len(partition_list)-1] = best_fit_parameters
 
 #%%
 def plot_fit_basic(numfit, best_fit, N, epsilon, angle, n_turns, dynamic_aperture, func, y_bar = False, params_are_4 = False):
@@ -284,9 +294,9 @@ def relative_intensity_D_law(D):
 
 def grid_intensity(grid):
     # Integrare con Simpson prima in un verso, poi nell'altro
-    #return integrate.trapz(np.asarray([integrate.simps(line, dx=dx) for line in grid]), dx=dx)
+    return integrate.trapz(np.asarray([integrate.simps(line, dx=dx) for line in grid]), dx=dx)
     # Oppure sommare senza pietà?
-    return np.sum(grid)
+    #return np.sum(grid)
     
 # Weights at beginning
 weights = np.array([[intensity_zero(x * dx, y * dx) for x in range(80)] for y in range(80)])
@@ -298,7 +308,7 @@ print("precise")
 loss_precise = {}
 for epsilon in lin_data:
     print(epsilon)
-    intensity_evolution = [I0]
+    intensity_evolution = [1.]
     for time in n_turns:
         mask = np.copy(lin_data[epsilon])
         mask[mask < time] = 0
@@ -307,6 +317,18 @@ for epsilon in lin_data:
         intensity_evolution.append(grid_intensity(masked_weights))
     loss_precise[epsilon] = np.asarray(intensity_evolution) / I0
 
+print("from fit")
+
+loss_D_fit = {}
+for epsilon in best_fit_parameters1[1]:
+    print(epsilon)
+    intensity_evolution = [1.]
+    for time in n_turns:
+        current_dynamic_aperture = best_fit_parameters1[1][epsilon][0] + best_fit_parameters1[1][epsilon][2]/(np.log10(time))**best_fit_parameters1[1][epsilon][4]
+        intensity_evolution.append(relative_intensity_D_law(current_dynamic_aperture))
+    loss_D_fit[epsilon] = np.asarray(intensity_evolution)
+
+'''
 print("D generalized")
 loss_D = []
 dx2 = dx * dx
@@ -329,14 +351,16 @@ for partition in partition_lists:
             intensity_evolution.append(grid_intensity(masked_weights))
         temp_loss[epsilon] = np.asarray(intensity_evolution) / I0
     loss_D.append(temp_loss)
+'''
 
 #%%
 print("Plot Loss.")
 
-for epsilon in loss_D[0]:
+for epsilon in loss_D_fit:
     plt.plot(np.concatenate((np.array([0]),n_turns)), loss_precise[epsilon], linewidth = 0.5, label="Precise loss")
-    for i in range(len(loss_D)):
-        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[i][epsilon], linewidth = 0.5, label="D loss ({} partitions)".format(i+1))
+    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D_fit[epsilon], linewidth = 0.5, label="D loss")
+#    for i in range(len(loss_D)):
+#        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[i][epsilon], linewidth = 0.5, label="D loss ({} partitions)".format(i+1))
     plt.xlabel("N turns")
     plt.xscale("log")
     plt.xlim(1000,10000000)
