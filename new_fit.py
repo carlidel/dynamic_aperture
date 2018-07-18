@@ -6,6 +6,7 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import pickle
 from scipy.optimize import curve_fit
 import png_to_jpg as converter
+from scipy import integrate
 
 # Print precision and DPI precision and TEX rendering in plots
 
@@ -56,8 +57,8 @@ k_error = k_possible_values[1] - k_possible_values[0]
 
 # Function Definitions
 
-def compute_D(limit):
-    return np.average(limit)
+def compute_D(limit, section_dimention):
+    return integrate.trapz(limit, dx=dtheta) / (section_dimention)
 
 def error_estimation(limit):
     first_derivatives = np.asarray([(limit[k+1] - limit[k]) / dtheta for k in range(len(limit) - 1)])
@@ -78,7 +79,7 @@ def convolve_and_compute(data, n_turns, n_angles_in_partition, stride = 1):
                     j += 1
                 limit.append((j - 1) * dx)
             limit = np.asarray(limit)
-            D[t] = compute_D(limit)
+            D[t] = compute_D(limit, dtheta * (n_angles_in_partition-1))
             Err[t] = error_estimation(limit)
         angle[(data[i + n_angles_in_partition - 1][0] + data[i][0]) / 2] = (D, Err)
     return angle
@@ -100,7 +101,7 @@ def divide_and_compute(data, n_turns, partition_list = [0, np.pi/2]):
                     limit.append((j - 1) * dx)
             assert n_angles >= 5
             limit = np.asarray(limit)
-            D[t] = compute_D(limit)
+            D[t] = compute_D(limit, partition_list[i+1] - partition_list[i])
             Err[t] = error_estimation(limit)           
         angle[(partition_list[i] + partition_list[i + 1]) / 2] = (D, Err)
     return angle
@@ -197,12 +198,7 @@ data = pickle.load(open("radscan_dx01_firstonly_dictionary.pkl", "rb"))
 lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 
 #%%
-print("Fit on basic partitions")
 
-fit_parameters1 = {}    # fit1
-fit_parameters2 = {}    # fit2
-fit_parameters3 = {}    # fit3
-fit_parameters4 = {}    # fit4
 dynamic_aperture = {}   # D with error
 
 for partition_list in partition_lists:
@@ -214,14 +210,25 @@ for partition_list in partition_lists:
         
     dynamic_aperture[len(partition_list)-1] = dyn_temp
 
+#%%
+
+print("Fit on basic partitions")
+
+fit_parameters1 = {}    # fit1
+fit_parameters2 = {}    # fit2
+fit_parameters3 = {}    # fit3
+fit_parameters4 = {}    # fit4
+
+for partition_list in partition_lists:
+    print(partition_list)
     # fit1
 
     fit_parameters = {}
 
-    for epsilon in dyn_temp:
+    for epsilon in dynamic_aperture[len(partition_list)-1]:
         temp = {}
-        for angle in dyn_temp[epsilon]:
-            temp[angle] = non_linear_fit(dyn_temp[epsilon][angle], n_turns, method=1)
+        for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
+            temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=1)
         fit_parameters[epsilon] = temp
         
     fit_parameters1[len(partition_list)-1] = fit_parameters
@@ -230,10 +237,10 @@ for partition_list in partition_lists:
 
     fit_parameters = {}
 
-    for epsilon in dyn_temp:
+    for epsilon in dynamic_aperture[len(partition_list)-1]:
         temp = {}
-        for angle in dyn_temp[epsilon]:
-            temp[angle] = non_linear_fit(dyn_temp[epsilon][angle], n_turns, method=2)
+        for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
+            temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=2)
         fit_parameters[epsilon] = temp
         
     fit_parameters2[len(partition_list)-1] = fit_parameters
@@ -242,10 +249,10 @@ for partition_list in partition_lists:
 
     fit_parameters = {}
 
-    for epsilon in dyn_temp:
+    for epsilon in dynamic_aperture[len(partition_list)-1]:
         temp = {}
-        for angle in dyn_temp[epsilon]:
-            temp[angle] = non_linear_fit(dyn_temp[epsilon][angle], n_turns, method=3)
+        for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
+            temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=3)
         fit_parameters[epsilon] = temp
         
     fit_parameters3[len(partition_list)-1] = fit_parameters
@@ -254,10 +261,10 @@ for partition_list in partition_lists:
 
     fit_parameters = {}
 
-    for epsilon in dyn_temp:
+    for epsilon in dynamic_aperture[len(partition_list)-1]:
         temp = {}
-        for angle in dyn_temp[epsilon]:
-            temp[angle] = non_linear_fit(dyn_temp[epsilon][angle], n_turns, method=4)
+        for angle in dynamic_aperture[len(partition_list)-1][epsilon]:
+            temp[angle] = non_linear_fit(dynamic_aperture[len(partition_list)-1][epsilon][angle], n_turns, method=4)
         fit_parameters[epsilon] = temp
         
     fit_parameters4[len(partition_list)-1] = fit_parameters
@@ -344,56 +351,61 @@ compare_fit_chi_squared(fit_parameters1, fit_parameters2, fit_parameters3, fit_p
 #%%
 print("Is This Loss?")
 
-from scipy import integrate
-
 # Intensity functions
 
 def intensity_zero(x, y, sigma_x = 1, sigma_y = 1):
     return (1 / (2 * np.pi * sigma_x * sigma_y)) * np.exp(-((x**2/(2*sigma_x**2))+(y**2/(2*sigma_y**2))))
+    #return 1.
 
 def relative_intensity_D_law(D):
     return 1 - np.exp(- D**2 / 2)
 
 def grid_intensity(grid):
     # Integrare con Simpson prima in un verso, poi nell'altro
-    return integrate.trapz(np.asarray([integrate.simps(line, dx=dx) for line in grid]), dx=dx)
+    #return integrate.trapz(np.asarray([integrate.simps(line, dx=dx) for line in grid]), dx=dx)
     # Oppure sommare senza pietà?
-    #return np.sum(grid)
+    return np.sum(grid)
     
-
 # Weights at beginning
 weights = np.array([[intensity_zero(x * dx, y * dx) for x in range(80)] for y in range(80)])
 
-# PRECISE
+I0 = grid_intensity(np.array([[intensity_zero(x * dx, y * dx) for x in range(1000)] for y in range(1000)]))
+
+print("precise")
 
 loss_precise = {}
 for epsilon in lin_data:
-    intensity_evolution = [0.25]
+    print(epsilon)
+    intensity_evolution = [I0]
     for time in n_turns:
         mask = np.copy(lin_data[epsilon])
         mask[mask < time] = 0
         mask[mask >= time] = 1
         masked_weights = weights * mask
         intensity_evolution.append(grid_intensity(masked_weights))
-    loss_precise[epsilon] = np.asarray(intensity_evolution) * 4
+    loss_precise[epsilon] = np.asarray(intensity_evolution) / I0
 
-# D generalized
+print("D generalized")
 loss_D = []
+dx2 = dx * dx
 
 def select_angle(x, y, partition):
+    temp = np.arctan2(y, x)
     for i in range(len(partition) - 1):
-        if np.arctan2(y, x) <= partition[i + 1]:
+        if temp <= partition[i + 1]:
             return (partition[i] + partition[i+1]) / 2
 
 for partition in partition_lists:
+    print(partition)
     temp_loss = {}
     for epsilon in dynamic_aperture[len(partition) - 1]:
+        print(epsilon)
         intensity_evolution = [0.25]
         for time in n_turns:
-            mask = np.array([[(x*x*dx*dx + y*y*dx*dx) <= dynamic_aperture[len(partition) - 1][epsilon][select_angle(x,y,partition)][0][time] for x in range(80)] for y in range(80)], dtype = int)
+            mask = np.array([[(x*x*dx2 + y*y*dx2) <= dynamic_aperture[len(partition) - 1][epsilon][select_angle(x,y,partition)][0][time] for x in range(80)] for y in range(80)], dtype = int)
             masked_weights = weights * mask
             intensity_evolution.append(grid_intensity(masked_weights))
-        temp_loss[epsilon] = np.asarray(intensity_evolution) * 4
+        temp_loss[epsilon] = np.asarray(intensity_evolution) / I0
     loss_D.append(temp_loss)
 
 #%%
@@ -401,14 +413,13 @@ print("Plot Loss.")
 
 for epsilon in loss_D[0]:
     plt.plot(np.concatenate((np.array([0]),n_turns)), loss_precise[epsilon], linewidth = 0.5, label="Precise loss")
-    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[0][epsilon], linewidth = 0.5, label="D computed loss")
-    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[1][epsilon], linewidth = 0.5, label="D computed loss (parted in 2 angles)")
-    plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[2][epsilon], linewidth = 0.5, label="D computed loss (parted in 3 angles)")
+    for i in range(len(loss_D)):
+        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[i][epsilon], linewidth = 0.5, label="D loss ({} partitions)".format(i+1))
     plt.xlabel("N turns")
     plt.xscale("log")
     plt.xlim(1000,10000000)
     plt.ylabel("Relative Luminosity (A.U.)")
-    plt.ylim(0,0.4)
+    plt.ylim(0,0.5)
     plt.title("Comparison of loss measures, $\epsilon = {:2.0f}$".format(epsilon[2]))
     plt.legend()
     plt.tight_layout()
@@ -539,6 +550,7 @@ print("Draw 2D stability maps")
 stability_levels = np.array([1000, 10000, 100000, 1000000, 10000000])
 
 for key in data:
+    fig, ax = plt.subplots()
     for level in stability_levels:
         x = []
         y = []
@@ -550,45 +562,37 @@ for key in data:
                 j += 1
             x.append((j - 1) * dx * np.cos(line))
             y.append((j - 1) * dx * np.sin(line))
-        plt.fill(x, y, label="$turns = {}$".format(level))
-    plt.legend()
-    plt.xlabel("X coordinate (A.U.)")
-    plt.ylabel("Y coordinate (A.U.)")
-    plt.xlim(0,0.8)
-    plt.ylim(0,0.8)
-    plt.grid(True)
-    plt.title("Stable Region\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(key[0], key[1], key[2]))
-    plt.tight_layout()
-    plt.savefig("img/stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(key[2], key[0], key[1]), dpi = DPI)
+        ax.fill(x, y, label="$turns = 10^{}$".format(int(np.log10(level))))
+    ax.legend()
+    ax.set_xlabel("X coordinate (A.U.)")
+    ax.set_ylabel("Y coordinate (A.U.)")
+    ax.set_xlim(0,0.8)
+    ax.set_ylim(0,0.8)
+    ax.set_aspect("equal", "box")
+    ax.grid(True)
+    ax.set_title("Stable Region (angular scan)\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(key[0], key[1], key[2]))
+    fig.tight_layout()
+    fig.savefig("img/stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(key[2], key[0], key[1]), dpi = DPI)
     plt.clf()
 
 #%%
 print("Draw 2D stability maps from linscan")
 
-stability_levels = np.array([1000, 10000, 100000, 1000000, 10000000])
+from matplotlib.colors import LogNorm
+
+stability_levels = np.array([10000000, 1000000, 100000, 10000, 1000, 1])
 
 for epsilon in lin_data:
-    for level in stability_levels:
-        x = []
-        y = []
-        x.append(0.)
-        y.append(0.)
-        i = -1
-        for line in lin_data[epsilon]:
-            i += 1
-            j = 0
-            while line[j] >= level:
-                j += 1
-            x.append((j - 1) * dx)
-            y.append(i * dx)
-        plt.fill(x, y, label="$turns = {}$".format(level))
-    plt.legend()
+    temp = np.copy(lin_data[epsilon])
+    temp += 1
+    plt.imshow(temp, origin="lower", extent=(0,0.8,0,0.8), norm=LogNorm(vmin=1, vmax=10000000))
     plt.xlabel("X coordinate (A.U.)")
     plt.ylabel("Y coordinate (A.U.)")
     plt.xlim(0,0.8)
     plt.ylim(0,0.8)
     plt.grid(True)
-    plt.title("Stable Region (grid)\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(epsilon[0], epsilon[1], epsilon[2]))
+    plt.title("Stable Region (grid scan), number of turns\n$(\omega_x = {:3.3f}, \omega_y = {:3.3f}, \epsilon = {:3.3f})$".format(epsilon[0], epsilon[1], epsilon[2]))
+    plt.colorbar()
     plt.tight_layout()
     plt.savefig("img/grid_stability_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}.png".format(epsilon[2], epsilon[0], epsilon[1]), dpi = DPI)
     plt.clf()

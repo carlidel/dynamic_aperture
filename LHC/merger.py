@@ -12,4 +12,4 @@ for directory in directories:
 			data_corrected.append(file)
 		else:
 			data_uncorrected.append(file)
-	
+	print(data_uncorrected)
