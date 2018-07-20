@@ -137,7 +137,7 @@ std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon,
 
 int main(int argc, const char * argv[])
 {
-/*
+
 	epsilon_k[0]			= atof(argv[1]);
 	epsilon_k[1]			= atof(argv[2]);
 	epsilon_k[2]			= atof(argv[3]);
@@ -187,7 +187,8 @@ int main(int argc, const char * argv[])
 		std::cout << std::endl;
 		delete v;
 	}
-*/
+/**/
+/*
 	// Variables for linear scan
 	epsilon_k[0]			= atof(argv[1]);
 	epsilon_k[1]			= atof(argv[2]);
@@ -232,5 +233,6 @@ int main(int argc, const char * argv[])
 		std::cout << std::endl;
 		delete v;
 	}
+	/**/
 	return 0;
 }

@@ -4,4 +4,4 @@ error                 = error/radscan.$(ClusterId).$(ProcId).err
 log                   = log/radscan.$(ClusterId).log
 +JobFlavour = "tomorrow"
 
-queue arguments from arguments.txt
+queue arguments from ang_arguments.txt
