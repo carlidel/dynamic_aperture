@@ -1,5 +1,6 @@
 import os
 import pickle
+import numpy as np
 
 directories = ["data_summary_H/", "data_summary_HV/", "data_summary_V/"]
 
@@ -27,8 +28,8 @@ for directory in directories:
 		for line in file:
 			temp_DA.append(float(line.split(" ")[8-1]))
 			temp_time.append(int(line.split(" ")[16-1]))
-		times_corrected.append(temp_time)
-		DAs_corrected.append(temp_DA)
+		times_corrected.append(np.asarray(temp_time))
+		DAs_corrected.append(np.asarray(temp_DA))
 	
 	for filename in data_corrected:
 		temp_time = []
@@ -37,8 +38,8 @@ for directory in directories:
 		for line in file:
 			temp_DA.append(float(line.split(" ")[8-1]))
 			temp_time.append(int(line.split(" ")[16-1]))
-		times_uncorrected.append(temp_time)
-		DAs_uncorrected.append(temp_DA)
+		times_uncorrected.append(np.asarray(temp_time))
+		DAs_uncorrected.append(np.asarray(temp_DA))
 
 	dictionary[directory[13:-1]] = (times_corrected, DAs_corrected, times_uncorrected, DAs_uncorrected)
 
