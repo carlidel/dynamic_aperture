@@ -45,7 +45,7 @@ for i in range(job_numbers):
 		dictionary[(jobs[i][7], jobs[i][8], jobs[i][10])] = jobs[i][14]
 
 for epsilon in dictionary:
-	storage = np.zeros((80,80), dtype = int)
+	storage = np.zeros((1000,1000), dtype = int)
 	i = -1
 	for position in sorted(dictionary[epsilon]):
 		i += 1
@@ -58,5 +58,5 @@ for epsilon in dictionary:
 
 #print(dictionary[1])
 
-with open("linscan_dx01_firstonly_dictionary.pkl", "wb") as f:
+with open("linscan_dx001_firstonly_dictionary.pkl", "wb") as f:
 	pickle.dump(dictionary, f, pickle.HIGHEST_PROTOCOL)
