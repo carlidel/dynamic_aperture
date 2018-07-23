@@ -57,7 +57,7 @@ k_error = k_possible_values[1] - k_possible_values[0]
 # Function Definitions
 
 def compute_D(limit, section_dimention):
-    return integrate.trapz(limit, dx=dtheta) / (section_dimention)
+    return integrate.simps(limit, dx=dtheta) / (section_dimention)
 
 def error_estimation(limit):
     first_derivatives = np.asarray([(limit[k+1] - limit[k]) / dtheta for k in range(len(limit) - 1)])
@@ -301,7 +301,9 @@ def grid_intensity(grid):
     
 # Weights at beginning
 loss_precise = {}
-loss_D_fit = {}
+loss_D_fit1 = {}
+loss_D_fit2 = {}
+
 for sigma in sigmas:
     print(sigma)
     weights = np.array([[intensity_zero(x * dx, y * dx, sigma, sigma) for x in range(80)] for y in range(80)])
@@ -322,7 +324,7 @@ for sigma in sigmas:
         loss_precise_temp[epsilon] = np.asarray(intensity_evolution) / I0
     loss_precise[sigma] = loss_precise_temp
 
-    print("from fit")
+    print("from fit1")
 
     loss_D_fit_temp = {}
     for epsilon in best_fit_parameters1[1]:
@@ -332,26 +334,62 @@ for sigma in sigmas:
             current_dynamic_aperture = best_fit_parameters1[1][epsilon][0] + best_fit_parameters1[1][epsilon][2]/(np.log10(time))**best_fit_parameters1[1][epsilon][4]
             intensity_evolution.append(relative_intensity_D_law(current_dynamic_aperture, sigma))
         loss_D_fit_temp[epsilon] = np.asarray(intensity_evolution)
-    loss_D_fit[sigma] = loss_D_fit_temp
+    loss_D_fit1[sigma] = loss_D_fit_temp
+    
+    print("from fit2")
+
+    loss_D_fit_temp = {}
+    for epsilon in best_fit_parameters2[1]:
+        print(epsilon)
+        intensity_evolution = [1.]
+        for time in n_turns:
+            current_dynamic_aperture = best_fit_parameters2[1][epsilon][2]/(np.log10(time) - best_fit_parameters2[1][epsilon][0])**best_fit_parameters2[1][epsilon][4]
+            intensity_evolution.append(relative_intensity_D_law(current_dynamic_aperture, sigma))
+        loss_D_fit_temp[epsilon] = np.asarray(intensity_evolution)
+    loss_D_fit2[sigma] = loss_D_fit_temp
 
 #%%
-print("Plot Loss.")
+print("Plot Loss1.")
 
 for sigma in sigmas:
-    for epsilon in loss_D_fit[sigma]:
-        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_precise[sigma][epsilon], linewidth = 0.5, label="Precise loss")
-        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D_fit[sigma][epsilon], linewidth = 0.5, label="D loss")
+    for epsilon in loss_D_fit1[sigma]:
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], loss_precise[sigma][epsilon][1:], label="Precise loss")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], loss_D_fit1[sigma][epsilon][1:], label="D loss")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], np.absolute(loss_precise[sigma][epsilon] - loss_D_fit1[sigma][epsilon])[1:], label="Difference")
     #    for i in range(len(loss_D)):
     #        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[i][epsilon], linewidth = 0.5, label="D loss ({} partitions)".format(i+1))
         plt.xlabel("N turns")
         plt.xscale("log")
         plt.xlim(1e3,1e7)
         plt.ylabel("Relative Luminosity (A.U.)")
-        plt.ylim(0,1)
-        plt.title("Comparison of loss measures, $\sigma = {:2.1f}$, $\epsilon = {:2.0f}$".format(sigma,epsilon[2]))
+        #plt.ylim(0,1)
+        plt.title("Comparison of loss measures (FIT1), $\sigma = {:2.1f}$, $\epsilon = {:2.0f}$".format(sigma,epsilon[2]))
         plt.legend()
+        plt.grid(True)
         plt.tight_layout()
-        plt.savefig("img/loss_sig{:2.1f}_eps{:2.0f}.png".format(sigma,epsilon[2]), dpi=DPI)
+        plt.savefig("img/loss_fit1_sig{:2.1f}_eps{:2.0f}.png".format(sigma,epsilon[2]), dpi=DPI)
+        plt.clf()
+
+#%%
+print("Plot Loss2.")
+
+for sigma in sigmas:
+    for epsilon in loss_D_fit2[sigma]:
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], loss_precise[sigma][epsilon][1:], label="Precise loss")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], loss_D_fit2[sigma][epsilon][1:], label="D loss")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], np.absolute(loss_precise[sigma][epsilon] - loss_D_fit2[sigma][epsilon])[1:], label="Difference")
+    #    for i in range(len(loss_D)):
+    #        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[i][epsilon], linewidth = 0.5, label="D loss ({} partitions)".format(i+1))
+        plt.xlabel("N turns")
+        plt.xscale("log")
+        plt.xlim(1e3,1e7)
+        plt.ylabel("Relative Luminosity (A.U.)")
+        #plt.ylim(0,1)
+        plt.title("Comparison of loss measures (FIT2), $\sigma = {:2.1f}$, $\epsilon = {:2.0f}$".format(sigma,epsilon[2]))
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig("img/loss_fit2_sig{:2.1f}_eps{:2.0f}.png".format(sigma,epsilon[2]), dpi=DPI)
         plt.clf()
 
 #%%
@@ -470,8 +508,6 @@ print("Draw 2D stability maps from linscan")
 
 from matplotlib.colors import LogNorm
 
-stability_levels = np.array([10000000, 1000000, 100000, 10000, 1000, 1])
-
 for epsilon in lin_data:
     temp = np.copy(lin_data[epsilon])
     temp += 1
@@ -497,16 +533,84 @@ for epsilon in lin_data:
     cv2.imwrite("img/concatenated_stability_eps{:2.0f}.png".format(epsilon[2]),vis)
 
 #%%
+# Compare every region
+
+from matplotlib.colors import LogNorm
+
+stability_levels = np.array([10000000, 5000000, 1000000, 500000, 100000, 50000, 10000, 5000, 1000])    
+    
+for epsilon in lin_data:
+    for level in stability_levels:
+        fig, ax = plt.subplots()
+        temp = np.copy(lin_data[epsilon])
+        temp += 1
+        coso = ax.imshow(temp, origin="lower", extent=(0,0.8,0,0.8), norm=LogNorm(vmin=level, vmax=10000000))
+        x = []
+        y = []
+        x.append(0.)
+        y.append(0.)
+        for line in sorted(data[epsilon]):
+            j = 0
+            while data[epsilon][line][j] >= level:
+                j += 1
+            x.append((j - 1) * dx * np.cos(line))
+            y.append((j - 1) * dx * np.sin(line))
+        ax.fill(x, y, "r",label="Angle scan".format(int(np.log10(level))))
+        ax.legend()
+        ax.set_xlabel("X coordinate (A.U.)")
+        ax.set_ylabel("Y coordinate (A.U.)")
+        ax.set_xlim(0,0.8)
+        ax.set_ylim(0,0.8)
+        ax.set_aspect("equal", "box")
+        ax.grid(True)
+        fig.colorbar(coso, ax=ax)
+        ax.set_title("Comparision of scans, $\epsilon = {:2.0f}$, $N = {}$".format(epsilon[2], level))
+        fig.savefig("img/comparison_eps{:2.0f}_N{}.png".format(epsilon[2], level), dpi = DPI)
+        plt.close()
+
+#%%
 print("LHC DATA!")
 
 lhc_data = pickle.load(open("LHC_DATA.pkl", "rb"))
 
+def sigma_filler(data):
+    sigma_dict = {}
+    for label in sorted(data):
+        sigma_dict[label] = data[label] * 0.01
+    return sigma_dict
+        
+lhc_fit_parameters1 = {}
+lhc_best_fit_parameters1 = {}
+lhc_fit_parameters2 = {}
+lhc_best_fit_parameters2 = {}
+
 for label in lhc_data:
-    for i in range(len(lhc_data[label][1])):
-        sigma_filler = np.
-
-
-
+    print(label)
+    temp_corr1 = []
+    temp_uncorr1 = []
+    temp_corr2 = []
+    temp_uncorr2 = []
+    temp_best_corr1 = []
+    temp_best_uncorr1 = []
+    temp_best_corr2 = []
+    temp_best_uncorr2 = []
+    for sample in lhc_data[label][0]:
+        sigma_dict = sigma_filler(sample)
+        temp_corr1.append(non_linear_fit((sample, sigma_dict), list(sorted(sample)), 1))
+        temp_corr2.append(non_linear_fit((sample, sigma_dict), list(sorted(sample)), 2))
+        temp_best_corr1.append(select_best_fit(temp_corr1[-1]))
+        temp_best_corr2.append(select_best_fit(temp_corr2[-1]))
+    for sample in lhc_data[label][1]:
+        sigma_dict = sigma_filler(sample)
+        temp_uncorr1.append(non_linear_fit((sample, sigma_dict), list(sorted(sample)), 1))
+        temp_uncorr2.append(non_linear_fit((sample, sigma_dict), list(sorted(sample)), 2))
+        temp_best_uncorr1.append(select_best_fit(temp_uncorr1[-1]))
+        temp_best_uncorr2.append(select_best_fit(temp_uncorr2[-1]))
+    lhc_fit_parameters1[label] = (temp_corr1, temp_uncorr1)
+    lhc_fit_parameters2[label] = (temp_corr2, temp_uncorr2)
+    lhc_best_fit_parameters1[label] = (temp_best_corr1, temp_best_uncorr1)
+    lhc_best_fit_parameters2[label] = (temp_best_corr2, temp_best_uncorr2)
+    
 #%%
 # Convert to JPEG
 
