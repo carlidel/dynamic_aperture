@@ -116,7 +116,7 @@ std::vector<double> * modulated_radius_scan(double theta, double dx, double epsi
 	return v;
 }
 
-std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int n_scans = 80)
+std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int n_scans = 1000)
 {
 	std::vector<double> * v = new std::vector<double>();
 
@@ -137,7 +137,7 @@ std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon,
 
 int main(int argc, const char * argv[])
 {
-
+/*
 	epsilon_k[0]			= atof(argv[1]);
 	epsilon_k[1]			= atof(argv[2]);
 	epsilon_k[2]			= atof(argv[3]);
@@ -188,7 +188,7 @@ int main(int argc, const char * argv[])
 		delete v;
 	}
 /**/
-/*
+
 	// Variables for linear scan
 	epsilon_k[0]			= atof(argv[1]);
 	epsilon_k[1]			= atof(argv[2]);
@@ -204,8 +204,6 @@ int main(int argc, const char * argv[])
 	unsigned int max_turns 	= atoi(argv[12]);
 	unsigned int from 		= atoi(argv[13]);
 	unsigned int to 		= atoi(argv[14]);
-
-	// Variables for angular scan
 
 	std::cout << "epsilon_k[0] "<< epsilon_k[0]	<< std::endl;
 	std::cout << "epsilon_k[1] "<< epsilon_k[1]	<< std::endl;

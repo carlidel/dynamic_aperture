@@ -22,26 +22,20 @@ for directory in directories:
 	DAs_uncorrected = []
 
 	for filename in data_corrected:
-		temp_time = []
-		temp_DA = []
+		temp_DA = {}
 		file = open(directory+filename, 'r')
 		for line in file:
-			temp_DA.append(float(line.split(" ")[8-1]))
-			temp_time.append(int(line.split(" ")[16-1]))
-		times_corrected.append(np.asarray(temp_time))
-		DAs_corrected.append(np.asarray(temp_DA))
+			temp_DA[int(line.split(" ")[16 - 1])] = float(line.split(" ")[8-1])
+		DAs_corrected.append(temp_DA)
 	
 	for filename in data_corrected:
-		temp_time = []
-		temp_DA = []
+		temp_DA = {}
 		file = open(directory+filename, 'r')
 		for line in file:
-			temp_DA.append(float(line.split(" ")[8-1]))
-			temp_time.append(int(line.split(" ")[16-1]))
-		times_uncorrected.append(np.asarray(temp_time))
-		DAs_uncorrected.append(np.asarray(temp_DA))
+			temp_DA[int(line.split(" ")[16-1])] = float(line.split(" ")[8-1])
+		DAs_uncorrected.append(temp_DA)
 
-	dictionary[directory[13:-1]] = (times_corrected, DAs_corrected, times_uncorrected, DAs_uncorrected)
+	dictionary[directory[13:-1]] = (DAs_corrected, DAs_uncorrected)
 
 with open("LHC_DATA.pkl", "wb") as f:
 	pickle.dump(dictionary, f, pickle.HIGHEST_PROTOCOL)
