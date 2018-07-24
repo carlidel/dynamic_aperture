@@ -1,0 +1,8 @@
+Cose da fare:
+> Fit sulla curva delle perdite precise
+> Comparazione di suddetti parametri fittati con fit precedenti
+> (migliorare misura delle perdite? magari...)
+> Come sono i parametri in FIT2? Sempre positivi?
+> Analisi performance di fit in LHC
+> Comparazione delle differenze (la stima pessimistica interferirà di certo)
+> Risolvere manualmente la differenza?

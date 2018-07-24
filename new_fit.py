@@ -361,8 +361,8 @@ for sigma in sigmas:
         plt.xlabel("N turns")
         plt.xscale("log")
         plt.xlim(1e3,1e7)
-        plt.ylabel("Relative Luminosity (A.U.)")
-        #plt.ylim(0,1)
+        plt.ylabel("Relative Luminosity")
+        plt.ylim(bottom=0)
         plt.title("Comparison of loss measures (FIT1), $\sigma = {:2.1f}$, $\epsilon = {:2.0f}$".format(sigma,epsilon[2]))
         plt.legend()
         plt.grid(True)
@@ -383,13 +383,37 @@ for sigma in sigmas:
         plt.xlabel("N turns")
         plt.xscale("log")
         plt.xlim(1e3,1e7)
-        plt.ylabel("Relative Luminosity (A.U.)")
-        #plt.ylim(0,1)
+        plt.ylabel("Relative Luminosity")
+        plt.ylim(bottom=0)
         plt.title("Comparison of loss measures (FIT2), $\sigma = {:2.1f}$, $\epsilon = {:2.0f}$".format(sigma,epsilon[2]))
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
         plt.savefig("img/loss_fit2_sig{:2.1f}_eps{:2.0f}.png".format(sigma,epsilon[2]), dpi=DPI)
+        plt.clf()
+
+#%%
+print("Plot both loss fits.")
+
+for sigma in sigmas:
+    for epsilon in loss_D_fit2[sigma]:
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], loss_precise[sigma][epsilon][1:], linewidth=0.5, label="Precise loss")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], loss_D_fit1[sigma][epsilon][1:], linewidth=0.5, label="D loss FIT1")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], np.absolute(loss_precise[sigma][epsilon] - loss_D_fit1[sigma][epsilon])[1:], linewidth=0.5, label="Difference FIT1")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], loss_D_fit2[sigma][epsilon][1:], linewidth=0.5, label="D loss FIT2")
+        plt.plot(np.concatenate((np.array([0]),n_turns))[1:], np.absolute(loss_precise[sigma][epsilon] - loss_D_fit2[sigma][epsilon])[1:], linewidth=0.5, label="Difference FIT2")
+    #    for i in range(len(loss_D)):
+    #        plt.plot(np.concatenate((np.array([0]),n_turns)), loss_D[i][epsilon], linewidth = 0.5, label="D loss ({} partitions)".format(i+1))
+        plt.xlabel("N turns")
+        plt.xscale("log")
+        plt.xlim(1e3,1e7)
+        plt.ylabel("Relative Luminosity")
+        plt.ylim(bottom=0)
+        plt.title("Comparison of loss measures (FIT1 and FIT2), $\sigma = {:2.1f}$, $\epsilon = {:2.0f}$".format(sigma,epsilon[2]))
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig("img/loss_both_sig{:2.1f}_eps{:2.0f}.png".format(sigma,epsilon[2]), dpi=DPI)
         plt.clf()
 
 #%%
