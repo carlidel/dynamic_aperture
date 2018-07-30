@@ -3,6 +3,9 @@
 *.png
 */JPEG/*
 
+# Pickle stuff is too big
+*.pkl
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
