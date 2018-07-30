@@ -6,3 +6,13 @@ Cose da fare:
 > Analisi performance di fit in LHC
 > Comparazione delle differenze (la stima pessimistica interferirà di certo)
 > Risolvere manualmente la differenza?
+> Completare comparazione dei parametri dei fit.
+> PRIORITà: analisi per partizioni e plot sintetici.
+
+avere curva senza riflessione ed una dove si trascurano le parti disconnesse.
+possibilità: avere un calcolo gratuito delle intensità durante la misura del bordo dlel'aperutra dinamica
+
+implementare flag :: per decidere da quale tempo in poi considerare (scartare primi tempi causa legge asintotica)
+
+implementare stima errore per perdite
+

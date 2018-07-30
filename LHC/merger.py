@@ -8,34 +8,63 @@ dictionary = {}
 
 for directory in directories:
 	files = os.listdir(directory)
-	data_corrected = []
-	data_uncorrected = []
+	data_corrected1 = []
+	data_uncorrected1 = []
+	data_corrected2 = []
+	data_uncorrected2 = []
 	for file in files:
 		if "Ron" in file:
-			data_corrected.append(file)
+			if "B1" in file:
+				data_corrected1.append(file)
+			else:
+				data_corrected2.append(file)
 		else:
-			data_uncorrected.append(file)
+			if "B1" in file:
+				data_uncorrected1.append(file)
+			else:
+				data_uncorrected2.append(file)
 	
-	times_corrected = []
-	DAs_corrected = []
-	times_uncorrected = []
-	DAs_uncorrected = []
+	DAs_corrected1 = []
+	DAs_uncorrected1 = []
+	
+	DAs_corrected2 = []
+	DAs_uncorrected2 = []
 
-	for filename in data_corrected:
+	for filename in data_corrected1:
 		temp_DA = {}
 		file = open(directory+filename, 'r')
 		for line in file:
 			temp_DA[int(line.split(" ")[16 - 1])] = float(line.split(" ")[8-1])
-		DAs_corrected.append(temp_DA)
+		DAs_corrected1.append(temp_DA)
 	
-	for filename in data_corrected:
+	for filename in data_uncorrected1:
 		temp_DA = {}
 		file = open(directory+filename, 'r')
 		for line in file:
 			temp_DA[int(line.split(" ")[16-1])] = float(line.split(" ")[8-1])
-		DAs_uncorrected.append(temp_DA)
+		DAs_uncorrected1.append(temp_DA)
 
-	dictionary[directory[13:-1]] = (DAs_corrected, DAs_uncorrected)
+	for filename in data_corrected2:
+		temp_DA = {}
+		file = open(directory+filename, 'r')
+		for line in file:
+			temp_DA[int(line.split(" ")[16 - 1])] = float(line.split(" ")[8-1])
+		DAs_corrected2.append(temp_DA)
+	
+	for filename in data_uncorrected2:
+		temp_DA = {}
+		file = open(directory+filename, 'r')
+		for line in file:
+			temp_DA[int(line.split(" ")[16-1])] = float(line.split(" ")[8-1])
+		DAs_uncorrected2.append(temp_DA)
+
+	temp_dict = {}
+	temp_dict ["cor1"] = DAs_corrected1
+	temp_dict ["cor2"] = DAs_corrected2
+	temp_dict ["uncor1"] = DAs_uncorrected1
+	temp_dict ["uncor2"] = DAs_uncorrected2
+
+	dictionary[directory[13:-1]] = temp_dict
 
 with open("LHC_DATA.pkl", "wb") as f:
 	pickle.dump(dictionary, f, pickle.HIGHEST_PROTOCOL)
