@@ -63,7 +63,11 @@ k_error = (k_possible_values[1] - k_possible_values[0]) / 2
 
 #%%
 
-# Function Definitions
+################################################################################
+################################################################################
+### DYNAMIC APERTURE COMPUTATION FUNCTIONS  ####################################
+################################################################################
+################################################################################
 
 
 def compute_D(contour_data, section_lenght, d_angle=dtheta):
@@ -139,16 +143,15 @@ def divide_and_compute(data,
     return result
 
 
+################################################################################
+################################################################################
+###  FIT1 FUNCTIONS  ###########################################################
+################################################################################
+################################################################################
+
+
 def FIT1(x, D_inf, B, k):
     return D_inf + B / np.log10(x)**k
-
-
-def FIT2(x, A, B, k):
-    return B / (np.log10(x) - A)**k
-
-
-def FIT2_linearized(x, k, B, A):
-    return np.exp(B - k * np.log(np.log(x) + A))
 
 
 def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
@@ -158,7 +161,7 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
     '''
     fit1 = lambda x, D_inf, B: D_inf + B / np.log10(x)**k
     chi1 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
-                                      np.sum(((y - fit1(x, popt[0], popt[1])) / sigma)**2))
+                        np.sum(((y - fit1(x, popt[0], popt[1])) / sigma)**2))
     explore_k = {}
     for number in np.arange(k_min, k_max + dk, dk):
         k = number
@@ -168,9 +171,13 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
                 n_turns, [data[i] for i in n_turns],
                 p0=[p0D, p0B],
                 sigma=[err_data[i] for i in n_turns])
-            explore_k[k] = (popt, pcov,
-                            chi1(n_turns, [data[i] for i in n_turns],
-                                 [err_data[i] for i in n_turns], popt), dk)
+            explore_k[k] = (popt, 
+                            pcov,
+                            chi1(n_turns, 
+                                [data[i] for i in n_turns],
+                                [err_data[i] for i in n_turns], 
+                                popt),
+                            dk)
         except RuntimeError:
             pass
     assert len(explore_k) > 0
@@ -182,12 +189,29 @@ def select_best_fit1(parameters):
     Selects the best fit parameters by choosing the minimum chi-squared value.
     """
     best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
-    return (best[1][0][0], np.sqrt(best[1][1][0][0]), best[1][0][1],
-            np.sqrt(best[1][1][1][1]), best[0], best[1][3])
+    return (best[1][0][0],
+            np.sqrt(best[1][1][0][0]),
+            best[1][0][1],
+            np.sqrt(best[1][1][1][1]),
+            best[0],
+            best[1][3])
 
 
 def pass_params_fit1(x, params):
     return FIT1(x, params[0], params[2], params[4])
+
+################################################################################
+################################################################################
+##  FIT2 FUNCTIONS  ############################################################
+################################################################################
+################################################################################
+
+def FIT2(x, A, b, k):
+    return b / (np.log10(x) - A)**k
+
+
+def FIT2_linearized(x, k, B, A): # b = exp(B)
+    return np.exp(B - k * np.log(np.log10(x) - A))
 
 
 def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
@@ -196,17 +220,17 @@ def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
     err_data is corrispective error with n_turns as keys.
     Implementing now the semplification method. We need to preprocess the data.
     '''
-    fit2 = lambda x, k, B: B - k * np.log(np.log(x) + A)
+    fit2 = lambda x, k, B: B - k * np.log(np.log10(x) - A)
     chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
-                                      np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
+                        np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
     explore_A = {}
     working_data = {}
     working_err_data = {}
     # Preprocessing the data
     for label in data:
         working_data[label] = np.log(np.copy(data[label]))
-        working_err_data[label] = (
-            (1 / np.copy(data[label])) * np.copy(err_data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) * 
+                                            np.copy(err_data[label]))
 
     for number in np.arange(A_min, A_max + dA, dA):
         if number >= 0:
@@ -217,11 +241,13 @@ def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
                     n_turns, [working_data[i] for i in n_turns],
                     p0=[p0k, p0B],
                     sigma=[working_err_data[i] for i in n_turns])
-                explore_A[A] = (popt, pcov,
+                explore_A[A] = (popt, 
+                                pcov,
                                 chi2(n_turns,
-                                     [working_data[i] for i in n_turns],
-                                     [working_err_data[i]
-                                      for i in n_turns], popt), dA)
+                                    [working_data[i] for i in n_turns],
+                                    [working_err_data[i] for i in n_turns], 
+                                    popt), 
+                                dA)
             except RuntimeError:
                 pass
     assert len(explore_A) > 0
@@ -233,13 +259,22 @@ def select_best_fit2(parameters):
     Selects the best fit parameters by choosing the minimum chi-squared value.
     """
     best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
-    return (best[1][0][0], np.sqrt(best[1][1][0][0]), best[1][0][1],
-            np.sqrt(best[1][1][1][1]), best[0], best[1][3])
+    return (best[1][0][0], 
+            np.sqrt(best[1][1][0][0]), 
+            best[1][0][1],
+            np.sqrt(best[1][1][1][1]), 
+            best[0], 
+            best[1][3])
 
 
 def pass_params_fit2(x, params):
     return FIT2_linearized(x, params[0], params[2], params[4])
 
+################################################################################
+################################################################################
+##  PLOTTING FUNCTIONS  ########################################################
+################################################################################
+################################################################################
 
 def plot_fit_basic1(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
     plt.errorbar(
@@ -534,6 +569,15 @@ def compare_fit_chi_squared(fit1,
     plt.clf()
 
 
+################################################################################
+################################################################################
+################################################################################
+###  LOSS COMPUTATION FUNCTIONS  ###############################################
+################################################################################
+################################################################################
+################################################################################
+
+
 # Sigmas for gaussian distribution to explore
 sigmas = [0.2, 0.25, 0.5, 0.75, 1]
 
@@ -568,9 +612,8 @@ def grid_intensity(grid, dx=dx):
     return integrate.simps(integrate.simps(grid, dx=dx), dx=dx)
 
 
-def single_partition_intensity(best_fit_params, fit_func, time, sigma):
-    current_dynamic_aperture = fit_func(time, best_fit_params[0],
-                                        best_fit_params[2], best_fit_params[4])
+def single_partition_intensity(best_fit_params, pass_par_func, time, sigma):
+    current_dynamic_aperture = pass_par_func(time, best_fit_params)
     return relative_intensity_D_law(current_dynamic_aperture, sigma)
 
 
@@ -612,6 +655,13 @@ def error_loss_estimation(best_fit_params, fit_func, contour_data, n_parts,
                 error_list, x=angle_list)
     return error
 
+################################################################################
+################################################################################
+################################################################################
+###  LOSS PLOTTING FUNCTIONS  ##################################################
+################################################################################
+################################################################################
+################################################################################
 
 def plot_4_different_fits(params1,
                           params2,
@@ -627,7 +677,7 @@ def plot_4_different_fits(params1,
         func1(n_turns, params1[0], params1[2], params1[4]),
         linewidth=0.5,
         label=
-        'fit1 from D: $D_\infty={:4.2f}\pm{:4.2f}, B={:4.2f}\pm{:4.2f}, k={:4.2f}\pm{:4.2f}$'.
+        'fit1 from D: $D_\infty={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
         format(params1[0], params1[1], params1[2], params1[3], params1[4],
                k_error))
     plt.plot(
@@ -635,7 +685,7 @@ def plot_4_different_fits(params1,
         func1(n_turns, params2[0], params2[2], params2[4]),
         linewidth=0.5,
         label=
-        'fit1 Precise: $D_\infty={:4.2f}\pm{:4.2f}, B={:4.2f}\pm{:4.2f}, k={:4.2f}\pm{:4.2f}$'.
+        'fit1 Precise: $D_\infty={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
         format(params2[0], params2[1], params2[2], params2[3], params2[4],
                k_error))
     plt.plot(
@@ -643,7 +693,7 @@ def plot_4_different_fits(params1,
         func2(n_turns, params3[0], params3[2], params3[4]),
         linewidth=0.5,
         label=
-        'fit2 from D: $A={:4.2f}\pm{:4.2f}, B={:4.2f}\pm{:4.2f}, k={:4.2f}\pm{:4.2f}$'.
+        'fit2 from D: $A={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
         format(params3[0], params3[1], params3[2], params3[3], params3[4],
                k_error))
     plt.plot(
@@ -651,7 +701,7 @@ def plot_4_different_fits(params1,
         func2(n_turns, params4[0], params4[2], params4[4]),
         linewidth=0.5,
         label=
-        'fit2 Precise: $A={:4.2f}\pm{:4.2f}, B={:4.2f}\pm{:4.2f}, k={:4.2f}\pm{:4.2f}$'.
+        'fit2 Precise: $A={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
         format(params4[0], params4[1], params4[2], params4[3], params4[4],
                k_error))
     plt.legend(prop={"size": 6})
@@ -684,6 +734,15 @@ def sigma_filler(data_dict, perc):
     for element in data_dict:
         sigma_dict[element] = data_dict[element] * perc
     return sigma_dict
+
+
+################################################################################
+################################################################################
+################################################################################
+###  LHC COMPUTATION AND PLOTTING FUNCTIONS   ##################################
+################################################################################
+################################################################################
+################################################################################
 
 
 def plot_lhc_fit(best_fit, data, func, label):
@@ -874,6 +933,39 @@ def lhc_2param_comparison2(params, label="plot"):
     plt.clf()
 
 
+def lhc_plot_chi_squared1(data, folder, kind):
+    for seed in data:
+        plt.plot(sorted(seed), 
+                 [seed[x][2] for x in sorted(seed)],
+                 'g--',
+                 linewidth=0.3,
+                 marker='o',
+                 markersize=0.0)
+    plt.xlabel("k value")
+    plt.ylabel("Chi-Squared value")
+    plt.title("Behaviour of Chi-Squared function in non linear fit part")
+    plt.tight_layout()
+    plt.savefig("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png",
+                dpi=DPI)
+    plt.clf()
+
+def lhc_plot_chi_squared2(data, folder, kind):
+    for seed in data:
+        plt.plot(sorted(seed), 
+                 [seed[x][2] for x in sorted(seed)],
+                 'g--',
+                 linewidth=0.3,
+                 marker='o',
+                 markersize=0.0)
+    plt.xlabel("A value")
+    plt.ylabel("Chi-Squared value")
+    plt.title("Behaviour of Chi-Squared function in non linear fit part")
+    plt.tight_layout()
+    plt.savefig("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png",
+                dpi=DPI)
+    plt.clf()
+
+
 def combine_plots_lhc1(folder, kind):
     img1 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_all.png")
     img2 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_Dinf.png")
@@ -882,8 +974,9 @@ def combine_plots_lhc1(folder, kind):
     img5 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_DB.png")
     img6 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_Dk.png")
     img7 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_Bk.png")
+    img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((filler, img1, filler), axis=1)
+    row1 = np.concatenate((filler, img1, img8), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
@@ -898,8 +991,9 @@ def combine_plots_lhc2(folder, kind):
     img5 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_AB.png")
     img6 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_Ak.png")
     img7 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_Bk.png")
+    img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((filler, img1, filler), axis=1)
+    row1 = np.concatenate((filler, img1, img8), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
