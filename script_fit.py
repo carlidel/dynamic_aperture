@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 
 #%%
 # Search parameters
-k_max = 5.
-k_min = -5.
-dk = 0.01
+k_max = 10.
+k_min = -10.
+dk = 0.1
 
-A_max = 50.
-A_min = -50.
+A_max = 3.2
+A_min = -100.
 dA = 0.1
 
 dx = 0.01
@@ -20,6 +20,15 @@ print("load data")
 
 data = pickle.load(open("radscan_dx01_firstonly_dictionary.pkl", "rb"))
 lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
+
+# temporary removal of high epsilons for performance:
+i = 0
+for epsilon in sorted(data.keys()):
+    if i > 4:
+        del data[epsilon]
+        del lin_data[epsilon]
+    i += 1
+## end temporary
 
 contour_data = {}
 for epsilon in data:
@@ -97,6 +106,19 @@ for epsilon in best_fit_parameters1:
                         dynamic_aperture)
 
 #%%
+print("Compare chi squared fits.")
+
+for epsilon in fit_parameters1:
+    for angle in fit_parameters1[epsilon][1]:
+        plot_chi_squared1(fit_parameters1[epsilon][1][angle],
+                                epsilon[2],
+                                1,
+                                angle)
+        plot_chi_squared2(fit_parameters2[epsilon][1][angle],
+                                epsilon[2],
+                                1,
+                                angle)
+
 
 #%%
 
@@ -373,11 +395,11 @@ print("Plot both loss fits.")
 for sigma in sigmas:
     print(sigma)
     for epsilon in loss_precise[sigma]:
-        # plt.plot(
-        #     np.concatenate((np.array([0]), n_turns))[1:],
-        #     loss_precise[sigma][epsilon][1:],
-        #     linewidth=0.5,
-        #     label="Precise loss".format(N))
+        plt.plot(
+            np.concatenate((np.array([0]), n_turns))[1:],
+            loss_precise[sigma][epsilon][1:],
+            linewidth=0.5,
+            label="Precise loss".format(N))
         plt.plot(
             np.concatenate((np.array([0]), n_turns))[1:],
             loss_anglescan[sigma][epsilon][1:],
@@ -406,16 +428,16 @@ for sigma in sigmas:
         #                     loss_D_fit2[sigma][epsilon][N])[1:],
         #         linewidth=0.5,
         #         label="Difference FIT2, N part $= {}$".format(N))
-        # plt.plot(
-        #     np.concatenate((np.array([0]), n_turns))[1:],
-        #     loss_precise_fit1[sigma][epsilon][1:],
-        #     linewidth=0.5,
-        #     label="D loss precise FIT1")
-        # plt.plot(
-        #     np.concatenate((np.array([0]), n_turns))[1:],
-        #     loss_precise_fit2[sigma][epsilon][1:],
-        #     linewidth=0.5,
-        #     label="D loss precise FIT2")
+        plt.plot(
+            np.concatenate((np.array([0]), n_turns))[1:],
+            loss_precise_fit1[sigma][epsilon][1:],
+            linewidth=0.5,
+            label="D loss precise FIT1")
+        plt.plot(
+            np.concatenate((np.array([0]), n_turns))[1:],
+            loss_precise_fit2[sigma][epsilon][1:],
+            linewidth=0.5,
+            label="D loss precise FIT2")
         plt.plot(
             np.concatenate((np.array([0]), n_turns))[1:],
             loss_anglescan_fit1[sigma][epsilon][1:],
@@ -427,7 +449,7 @@ for sigma in sigmas:
             linewidth=0.5,
             label="D loss anglescan FIT2")
         plt.xlabel("N turns")
-        #plt.xscale("log")
+        plt.xscale("log")
         plt.xlim(1e3, 1e7)
         plt.ylabel("Relative Intensity")
         #plt.ylim(0, 1)
@@ -438,7 +460,7 @@ for sigma in sigmas:
         plt.grid(True)
         plt.tight_layout()
         plt.savefig(
-            "img/loss_both_sig{:2.2f}_eps{:2.0f}.png".format(
+            "img/loss/loss_both_sig{:2.2f}_eps{:2.0f}.png".format(
                 sigma, epsilon[2]),
             dpi=DPI)
         plt.clf()
@@ -446,7 +468,7 @@ for sigma in sigmas:
 #%%
 print("LHC data.")
 lhc_data = pickle.load(open("LHC_DATA.pkl", "rb"))
-lhc_data = remove_first_times_lhc(lhc_data, 5000)
+lhc_data = remove_first_times_lhc(lhc_data, 500)
 
 #%%
 print("compute fits")

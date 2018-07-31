@@ -43,15 +43,15 @@ n_turns = np.array([
 
 # Partition list for basic angle partitioning
 partition_lists = [
-    [0, np.pi / 2],  # Always always keep this one
-    [0, np.pi / 4, np.pi / 2],
-    [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
-    [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
-    [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
-    [
-        0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12,
-        np.pi * 5 / 12, np.pi / 2
-    ]
+    [0, np.pi / 2]  # Always always keep this one
+    # ,[0, np.pi / 4, np.pi / 2],
+    # [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
+    # [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
+    # [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
+    # [
+    #     0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12,
+    #     np.pi * 5 / 12, np.pi / 2
+    #]
 ]
 
 # Exponential fit parameters
@@ -179,7 +179,7 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
                                 popt),
                             dk)
         except RuntimeError:
-            pass
+            print("Runtime Error at k = {}".format(k))
     assert len(explore_k) > 0
     return explore_k
 
@@ -233,23 +233,22 @@ def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
                                             np.copy(err_data[label]))
 
     for number in np.arange(A_min, A_max + dA, dA):
-        if number >= 0:
-            A = number
-            try:
-                popt, pcov = curve_fit(
-                    fit2,
-                    n_turns, [working_data[i] for i in n_turns],
-                    p0=[p0k, p0B],
-                    sigma=[working_err_data[i] for i in n_turns])
-                explore_A[A] = (popt, 
-                                pcov,
-                                chi2(n_turns,
-                                    [working_data[i] for i in n_turns],
-                                    [working_err_data[i] for i in n_turns], 
-                                    popt), 
-                                dA)
-            except RuntimeError:
-                pass
+        A = number
+        try:
+            popt, pcov = curve_fit(
+                fit2,
+                n_turns, [working_data[i] for i in n_turns],
+                p0=[p0k, p0B],
+                sigma=[working_err_data[i] for i in n_turns])
+            explore_A[A] = (popt, 
+                            pcov,
+                            chi2(n_turns,
+                                [working_data[i] for i in n_turns],
+                                [working_err_data[i] for i in n_turns], 
+                                popt), 
+                            dA)
+        except RuntimeError:
+            print("Runtime error with A = {}".format(A))
     assert len(explore_A) > 0
     return explore_A
 
@@ -538,32 +537,47 @@ def fit_parameters_evolution2(fit_parameters, label="plot"):
     plt.clf()
 
 
-def compare_fit_chi_squared(fit1,
-                            fit2,
-                            epsilon,
-                            n_partitions=1,
-                            angle=np.pi / 4):
+def plot_chi_squared1(fit_params,
+                      epsilon,
+                      n_partitions=1,
+                      angle=np.pi / 4):
     plt.plot(
-        list(fit1.keys()), [x[2] for x in list(fit1.values())],
+        list(fit_params.keys()), 
+        [x[2] for x in list(fit_params.values())],
         marker="o",
         markersize=0.5,
-        linewidth=0.5,
-        label="fit1")
-    plt.plot(
-        list(fit2.keys()), [x[2] for x in list(fit2.values())],
-        marker="o",
-        markersize=0.5,
-        linewidth=0.5,
-        label="fit2")
+        linewidth=0.5)
     plt.xlabel("k value")
     plt.ylabel("Chi-Squared value")
     plt.title(
-        "Fit Performance Comparison (Chi-Squared based), $\epsilon = {:2.0f}$,\n number of partitions $= {}$, central angle $= {:2.2f}$".
+        "non linear FIT1 Chi-Squared evolution, $\epsilon = {:2.0f}$,\n number of partitions $= {}$, central angle $= {:2.2f}$".
         format(epsilon, n_partitions, angle))
-    plt.legend()
     plt.tight_layout()
     plt.savefig(
-        "img/fit/fit_performance_comparison_eps{:2.0f}_npart{}_central{:2.2f}.png".
+        "img/fit/fit1_chisquared_eps{:2.0f}_npart{}_central{:2.2f}.png".
+        format(epsilon, n_partitions, angle),
+        dpi=DPI)
+    plt.clf()
+
+
+def plot_chi_squared2(fit_params,
+                      epsilon,
+                      n_partitions=1,
+                      angle=np.pi / 4):
+    plt.plot(
+        list(fit_params.keys()),
+        [x[2] for x in list(fit_params.values())],
+        marker="o",
+        markersize=0.5,
+        linewidth=0.5)
+    plt.xlabel("A value")
+    plt.ylabel("Chi-Squared value")
+    plt.title(
+        "non linear FIT2 Chi-Squared evolution, $\epsilon = {:2.0f}$,\n number of partitions $= {}$, central angle $= {:2.2f}$".
+        format(epsilon, n_partitions, angle))
+    plt.tight_layout()
+    plt.savefig(
+        "img/fit/fit2_chisquared_eps{:2.0f}_npart{}_central{:2.2f}.png".
         format(epsilon, n_partitions, angle),
         dpi=DPI)
     plt.clf()
