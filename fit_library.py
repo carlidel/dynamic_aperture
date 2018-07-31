@@ -636,9 +636,7 @@ def multiple_partition_intensity(best_fit_params, fit_func, n_parts, time,
     # Let's treat it as a basic summatory
     intensity = 0.
     for angle in best_fit_params:
-        current_dynamic_aperture = fit_func(time, best_fit_params[angle][0],
-                                            best_fit_params[angle][2],
-                                            best_fit_params[angle][4])
+        current_dynamic_aperture = fit_func(time, best_fit_params[angle])
         intensity += relative_intensity_D_law(current_dynamic_aperture,
                                               sigma) / n_parts
     return intensity
@@ -648,9 +646,7 @@ def error_loss_estimation(best_fit_params, fit_func, contour_data, n_parts,
                           time, sigma):
     error = 0.
     for angle in best_fit_params:
-        current_dynamic_aperture = fit_func(time, best_fit_params[angle][0],
-                                            best_fit_params[angle][2],
-                                            best_fit_params[angle][4])
+        current_dynamic_aperture = fit_func(time, best_fit_params[angle])
         error_list = []
         angle_list = []
         for theta in contour_data:

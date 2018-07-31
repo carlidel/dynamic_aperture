@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 
 #%%
 # Search parameters
-k_max = 10.
-k_min = -10.
+k_max = 20.
+k_min = -20.
 dk = 0.1
 
 A_max = 3.2
-A_min = -100.
-dA = 0.1
+A_min = -50.
+dA = 0.01
 
 dx = 0.01
 
@@ -22,12 +22,12 @@ data = pickle.load(open("radscan_dx01_firstonly_dictionary.pkl", "rb"))
 lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 
 # temporary removal of high epsilons for performance:
-i = 0
-for epsilon in sorted(data.keys()):
-    if i > 4:
-        del data[epsilon]
-        del lin_data[epsilon]
-    i += 1
+#i = 0
+#for epsilon in sorted(data.keys()):
+#    if i > 4:
+#        del data[epsilon]
+#        del lin_data[epsilon]
+#    i += 1
 ## end temporary
 
 contour_data = {}
@@ -186,11 +186,17 @@ for sigma in sigmas:
             for time in n_turns:
                 intensity_evolution.append(
                     multiple_partition_intensity(
-                        best_fit_parameters1[epsilon][N], FIT1, N, time,
-                        sigma))
+                                            best_fit_parameters1[epsilon][N], 
+                                            pass_params_fit1, 
+                                            N, 
+                                            time,
+                                            sigma))
                 error_evolution.append(
                     error_loss_estimation(best_fit_parameters1[epsilon][N],
-                                          FIT1, contour_data[epsilon], N, time,
+                                          pass_params_fit1, 
+                                          contour_data[epsilon], 
+                                          N, 
+                                          time,
                                           sigma))
             loss_D_fit_temp_part[N] = np.asarray(intensity_evolution)
             loss_D_fit_temp_part_err[N] = np.asarray(error_evolution)
@@ -214,11 +220,17 @@ for sigma in sigmas:
             for time in n_turns:
                 intensity_evolution.append(
                     multiple_partition_intensity(
-                        best_fit_parameters2[epsilon][N], FIT2, N, time,
-                        sigma))
+                                            best_fit_parameters2[epsilon][N], 
+                                            pass_params_fit2, 
+                                            N, 
+                                            time,
+                                            sigma))
                 error_evolution.append(
                     error_loss_estimation(best_fit_parameters2[epsilon][N],
-                                          FIT2, contour_data[epsilon], N, time,
+                                          pass_params_fit2, 
+                                          contour_data[epsilon], 
+                                          N, 
+                                          time,
                                           sigma))
             loss_D_fit_temp_part[N] = np.asarray(intensity_evolution)
             loss_D_fit_temp_part_err[N] = np.asarray(error_evolution)
@@ -405,29 +417,29 @@ for sigma in sigmas:
             loss_anglescan[sigma][epsilon][1:],
             linewidth=0.5,
             label="Anglescan loss".format(N))
-        # for N in loss_D_fit1[sigma][epsilon]:
-        #     plt.plot(
-        #         np.concatenate((np.array([0]), n_turns))[1:],
-        #         loss_D_fit1[sigma][epsilon][N][1:],
-        #         linewidth=0.5,
-        #         label="D loss FIT1, N $= {}$".format(N))
-        #     plt.plot(
-        #         np.concatenate((np.array([0]), n_turns))[1:],
-        #         np.absolute(loss_precise[sigma][epsilon] -
-        #                     loss_D_fit1[sigma][epsilon][N])[1:],
-        #         linewidth=0.5,
-        #         label="Difference FIT1, N part $= {}$".format(N))
-        #     plt.plot(
-        #         np.concatenate((np.array([0]), n_turns))[1:],
-        #         loss_D_fit2[sigma][epsilon][N][1:],
-        #         linewidth=0.5,
-        #         label="D loss FIT2, N $= {}$".format(N))
-        #     plt.plot(
-        #         np.concatenate((np.array([0]), n_turns))[1:],
-        #         np.absolute(loss_precise[sigma][epsilon] -
-        #                     loss_D_fit2[sigma][epsilon][N])[1:],
-        #         linewidth=0.5,
-        #         label="Difference FIT2, N part $= {}$".format(N))
+        for N in loss_D_fit1[sigma][epsilon]:
+            plt.plot(
+                np.concatenate((np.array([0]), n_turns))[1:],
+                loss_D_fit1[sigma][epsilon][N][1:],
+                linewidth=0.5,
+                label="D loss FIT1, N $= {}$".format(N))
+            # plt.plot(
+            #     np.concatenate((np.array([0]), n_turns))[1:],
+            #     np.absolute(loss_precise[sigma][epsilon] -
+            #                 loss_D_fit1[sigma][epsilon][N])[1:],
+            #     linewidth=0.5,
+            #     label="Difference FIT1, N part $= {}$".format(N))
+            plt.plot(
+                np.concatenate((np.array([0]), n_turns))[1:],
+                loss_D_fit2[sigma][epsilon][N][1:],
+                linewidth=0.5,
+                label="D loss FIT2, N $= {}$".format(N))
+            # plt.plot(
+            #     np.concatenate((np.array([0]), n_turns))[1:],
+            #     np.absolute(loss_precise[sigma][epsilon] -
+            #                 loss_D_fit2[sigma][epsilon][N])[1:],
+            #     linewidth=0.5,
+            #     label="Difference FIT2, N part $= {}$".format(N))
         plt.plot(
             np.concatenate((np.array([0]), n_turns))[1:],
             loss_precise_fit1[sigma][epsilon][1:],
