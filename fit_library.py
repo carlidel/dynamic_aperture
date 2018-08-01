@@ -151,7 +151,7 @@ def divide_and_compute(data,
 
 
 def FIT1(x, D_inf, B, k):
-    return D_inf + B / np.log10(x)**k
+    return D_inf + B / np.exp(k * np.log(np.log(x)))
 
 
 def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
@@ -159,27 +159,28 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
     data is a dictionary of the dynamic aperture data with n_turns as keys
     err_data is corrispective data with n_turns as keys
     '''
-    fit1 = lambda x, D_inf, B: D_inf + B / np.log10(x)**k
+    fit1 = lambda x, D_inf, B: D_inf + B / np.exp(k * np.log(np.log(x)))
     chi1 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
                         np.sum(((y - fit1(x, popt[0], popt[1])) / sigma)**2))
     explore_k = {}
     for number in np.arange(k_min, k_max + dk, dk):
-        k = number
-        try:
-            popt, pcov = curve_fit(
-                fit1,
-                n_turns, [data[i] for i in n_turns],
-                p0=[p0D, p0B],
-                sigma=[err_data[i] for i in n_turns])
-            explore_k[k] = (popt, 
-                            pcov,
-                            chi1(n_turns, 
-                                [data[i] for i in n_turns],
-                                [err_data[i] for i in n_turns], 
-                                popt),
-                            dk)
-        except RuntimeError:
-            print("Runtime Error at k = {}".format(k))
+        if np.absolute(number) > dk / 10.:
+            k = number
+            try:
+                popt, pcov = curve_fit(
+                    fit1,
+                    n_turns, [data[i] for i in n_turns],
+                    p0=[p0D, p0B],
+                    sigma=[err_data[i] for i in n_turns])
+                explore_k[k] = (popt, 
+                                pcov,
+                                chi1(n_turns, 
+                                    [data[i] for i in n_turns],
+                                    [err_data[i] for i in n_turns], 
+                                    popt),
+                                dk)
+            except RuntimeError:
+                print("Runtime Error at k = {}".format(k))
     assert len(explore_k) > 0
     return explore_k
 
@@ -207,11 +208,11 @@ def pass_params_fit1(x, params):
 ################################################################################
 
 def FIT2(x, A, b, k):
-    return b / (np.log10(x) - A)**k
+    return b / (np.log(A * x))**k
 
 
 def FIT2_linearized(x, k, B, A): # b = exp(B)
-    return np.exp(B - k * np.log(np.log10(x) - A))
+    return np.exp(B - k * np.log(np.log(A * np.asarray(x))))
 
 
 def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
@@ -220,7 +221,7 @@ def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
     err_data is corrispective error with n_turns as keys.
     Implementing now the semplification method. We need to preprocess the data.
     '''
-    fit2 = lambda x, k, B: B - k * np.log(np.log10(x) - A)
+    fit2 = lambda x, k, B: B - k * np.log(np.log(A * x))
     chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
                         np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
     explore_A = {}
@@ -650,20 +651,35 @@ def error_loss_estimation(best_fit_params, fit_func, contour_data, n_parts,
         error_list = []
         angle_list = []
         for theta in contour_data:
-            if angle - (np.pi /
-                        (n_parts * 2)) <= theta <= angle + (np.pi /
-                                                            (n_parts * 2)):
-                error_list.append(
-                    np.absolute(current_dynamic_aperture -
-                                contour_data[theta][time]))
+            if angle - (np.pi / (n_parts * 2)) <= theta <= angle + (np.pi / 
+                                                                (n_parts * 2)):
+                error_list.append(np.absolute(current_dynamic_aperture -
+                                                    contour_data[theta][time]))
                 angle_list.append(theta)
         error_list = np.asarray(error_list)
         angle_list = np.asarray(angle_list)
-        error += (2 / np.pi) * np.exp(
-            -(current_dynamic_aperture**2) /
-            (2 * sigma * sigma)) * current_dynamic_aperture * integrate.simps(
-                error_list, x=angle_list)
+        error += ((2 / np.pi) * 
+                 np.exp(-(current_dynamic_aperture**2) / (2 * sigma**2)) * 
+                 current_dynamic_aperture * 
+                 integrate.trapz(error_list, x=angle_list))
     return error
+
+
+def error_loss_estimation_single_partition(best_fit_params, fit_func,
+                                           contour_data, time, sigma):
+    current_dynamic_aperture = fit_func(time, best_fit_params)
+    error_list = []
+    angle_list = []
+    for theta in contour_data:
+        error_list.append(np.absolute(current_dynamic_aperture -
+                                            contour_data[theta][time]))
+        angle_list.append(theta)
+    error_list = np.asarray(error_list)
+    angle_list = np.asarray(angle_list)
+    return ((2 / np.pi) * 
+             np.exp(-(current_dynamic_aperture**2) / (2 * sigma**2)) * 
+             current_dynamic_aperture * 
+             integrate.trapz(error_list, x=angle_list))
 
 ################################################################################
 ################################################################################
