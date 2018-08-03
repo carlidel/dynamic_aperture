@@ -16,3 +16,23 @@ implementare flag :: per decidere da quale tempo in poi considerare (scartare pr
 
 implementare stima errore per perdite
 
+
+01/08/18
+uniformare b notation
+ridurre passo k per fit1
+implementare *doppia analisi* per fit2
+
+dopodiché...
+prendere implementazione iniziale senza trucchetti e vedere cosa ci offre il destino e la routine automatica.
+CONFRONTO TRA IMPLEMENTAZIONI (guidando magari manualmente le condizioni iniziali per la routine).
+
+poi da lì si vede cosa fare
+
+per fit 1 capire se le curve b-k stanno su b/(a)^k = cost.
+
+prima di fit3, tenere molto conto dei passaggi delicati di divergenza
+
+D^(1/k) = (formula2)^(1/k) come si comporta? 
+
+FIT3 => che è 
+

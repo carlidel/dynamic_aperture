@@ -159,7 +159,7 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
     data is a dictionary of the dynamic aperture data with n_turns as keys
     err_data is corrispective data with n_turns as keys
     '''
-    fit1 = lambda x, D_inf, B: D_inf + B / np.exp(k * np.log(np.log(x)))
+    fit1 = lambda x, D_inf, B: D_inf + B / np.log(x)**k
     chi1 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
                         np.sum(((y - fit1(x, popt[0], popt[1])) / sigma)**2))
     explore_k = {}
@@ -184,6 +184,31 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
     assert len(explore_k) > 0
     return explore_k
 
+def non_linear_fit1_naive(data, err_data, n_turns, p0D=0, p0B=0, p0k=0):
+    try:
+        popt, pcov = curve_fit(FIT1,
+                           n_turns,
+                           [data[i] for i in n_turns],
+                           p0=[p0D, p0B, p0k],
+                           sigma=[err_data[i] for i in n_turns])
+    except RuntimeError:
+        try:
+            popt, pcov = curve_fit(FIT1,
+                           n_turns,
+                           [data[i] for i in n_turns],
+                           p0=[p0D, p0B, -p0k],
+                           sigma=[err_data[i] for i in n_turns])
+        except RuntimeError:
+            print("Fail.")
+            return(0.,0.,0.,0.,0.,0.)
+
+    return(popt[0],
+           np.sqrt(pcov[0][0]),
+           popt[1],
+           np.sqrt(pcov[1][1]),
+           popt[2],
+           np.sqrt(pcov[2][2]))
+
 
 def select_best_fit1(parameters):
     """
@@ -207,8 +232,9 @@ def pass_params_fit1(x, params):
 ################################################################################
 ################################################################################
 
+
 def FIT2(x, A, b, k):
-    return b / (np.log(A * x))**k
+    return b / np.exp(k * np.log(np.log(A * x)))
 
 
 def FIT2_linearized(x, k, B, A): # b = exp(B)
@@ -216,11 +242,6 @@ def FIT2_linearized(x, k, B, A): # b = exp(B)
 
 
 def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
-    '''
-    data is a dictionary of the dynamic aperture data with n_turns as keys
-    err_data is corrispective error with n_turns as keys.
-    Implementing now the semplification method. We need to preprocess the data.
-    '''
     fit2 = lambda x, k, B: B - k * np.log(np.log(A * x))
     chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
                         np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
@@ -254,7 +275,113 @@ def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
     return explore_A
 
 
+def non_linear_fit2_naive(data, err_data, n_turns, p0k=0, p0B=0, p0A=0):
+    fit2 = lambda x, k, B, A: B - k * np.log(np.log(x/A))
+    working_data = {}
+    working_err_data = {}
+    # Preprocessing the data
+    for label in data:
+        working_data[label] = np.log(np.copy(data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) *
+                                            np.copy(err_data[label]))
+    try:
+        popt, pcov = curve_fit(fit2,
+                           n_turns,
+                           [working_data[i] for i in n_turns],
+                           p0=[p0k, p0B, p0A],
+                           sigma=[working_err_data[i] for i in n_turns],
+                           bounds=([-np.inf, -np.inf, 0],
+                                   [np.inf, np.inf, n_turns[0]]))
+        return (popt[0],
+                np.sqrt(pcov[0][0]),
+                popt[1],
+                np.sqrt(pcov[1][1]),
+                popt[2],
+                np.sqrt(pcov[2][2]))
+    except RuntimeError:
+        print("FAIL")
+        return(0.,0.,0.,0.,0.,0.)
+
+
 def select_best_fit2(parameters):
+    best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
+    return (best[1][0][0], 
+            np.sqrt(best[1][1][0][0]), 
+            best[1][0][1],
+            np.sqrt(best[1][1][1][1]), 
+            best[0], 
+            best[1][3])
+
+
+def pass_params_fit2(x, params):
+    return FIT2_linearized(x, params[0], params[2], params[4])
+
+################################################################################
+
+def FIT2_v1(x, A, b, k):
+    return b / np.exp(k * np.log((np.log10(x) + A)))
+
+
+def FIT2_linearized_v1(x, k, B, A): # b = exp(B)
+    return np.exp(B - k * np.log(np.log10(np.asarray(x)) + A))
+
+
+def non_linear_fit2_v1(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
+    fit2 = lambda x, k, B: B - k * np.log(np.log10(x) + A)
+    chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
+                        np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
+    explore_A = {}
+    working_data = {}
+    working_err_data = {}
+    # Preprocessing the data
+    for label in data:
+        working_data[label] = np.log(np.copy(data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) * 
+                                            np.copy(err_data[label]))
+
+    for number in np.arange(A_min, A_max + dA, dA):
+        A = number
+        try:
+            popt, pcov = curve_fit(
+                fit2,
+                n_turns, [working_data[i] for i in n_turns],
+                p0=[p0k, p0B],
+                sigma=[working_err_data[i] for i in n_turns])
+            explore_A[A] = (popt, 
+                            pcov,
+                            chi2(n_turns,
+                                [working_data[i] for i in n_turns],
+                                [working_err_data[i] for i in n_turns], 
+                                popt), 
+                            dA)
+        except RuntimeError:
+            print("Runtime error with A = {}".format(A))
+    assert len(explore_A) > 0
+    return explore_A
+
+
+def non_linear_fit2_naive_v1(data, err_data, n_turns, p0k=0, p0B=0, p0A=0):
+    working_data = {}
+    working_err_data = {}
+    # Preprocessing the data
+    for label in data:
+        working_data[label] = np.log(np.copy(data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) *
+                                            np.copy(err_data[label]))
+    popt, pcov = curve_fit(FIT2_linearized_v1,
+                           n_turns,
+                           [working_data[i] for i in n_turns],
+                           p0=[p0k, p0B, p0A],
+                           sigma=[working_err_data[i] for i in n_turns])
+    return (popt[0],
+            np.sqrt(pcov[0][0]),
+            popt[1],
+            np.sqrt(pcov[1][1]),
+            popt[2],
+            np.sqrt(pcov[2][2]))
+
+
+def select_best_fit2_v1(parameters):
     """
     Selects the best fit parameters by choosing the minimum chi-squared value.
     """
@@ -267,8 +394,9 @@ def select_best_fit2(parameters):
             best[1][3])
 
 
-def pass_params_fit2(x, params):
-    return FIT2_linearized(x, params[0], params[2], params[4])
+def pass_params_fit2_v1(x, params):
+    return FIT2_linearized_v1(x, params[0], params[2], params[4])
+
 
 ################################################################################
 ################################################################################
@@ -341,12 +469,12 @@ def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
         pass_params_fit2(n_turns, fit_params),
         'g--',
         linewidth=0.5,
-        label='fit: $A={:6.3f}, B={:6.3f}, k={:6.3f}$'.format(
+        label='fit: $A={:.2}, B={:.2}, k={:.2}$'.format(
             fit_params[4], np.exp(fit_params[2]), fit_params[0]))
     plt.xlabel("$N$ turns")
     plt.xscale("log")
     plt.ylabel("$D (A.U.)$")
-    plt.ylim(0., 1.)
+    #plt.ylim(0., 1.)
     plt.title(
         "FIT2,\n$dx = {:2.2f}, dth = {:3.3f}, mid\,angle = {:3.3f}$,\n$N Parts = {}, \epsilon = {:2.0f}, \omega_x = {:3.3f}, \omega_y = {:3.3f}$".
         format(dx, dtheta, angle, N, epsilon[2], epsilon[0], epsilon[1]))
@@ -373,6 +501,56 @@ def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
     plt.tight_layout()
     plt.savefig(
         "img/fit/fit2_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".
+        format(epsilon[2], epsilon[0], epsilon[1], angle, N),
+        dpi=DPI)
+    plt.clf()
+
+
+def plot_fit_basic2_v1(fit_params, N, epsilon, angle, n_turns,
+                       dynamic_aperture):
+    plt.errorbar(
+        n_turns, [dynamic_aperture[epsilon][N][angle][0][i] for i in n_turns],
+        yerr=[dynamic_aperture[epsilon][N][angle][1][i] for i in n_turns],
+        linewidth=0,
+        elinewidth=2,
+        label='Data')
+    plt.plot(
+        n_turns,
+        pass_params_fit2_v1(n_turns, fit_params),
+        'g--',
+        linewidth=0.5,
+        label='fit: $A={:.2}, B={:.2}, k={:.2}$'.format(
+            fit_params[4], np.exp(fit_params[2]), fit_params[0]))
+    plt.xlabel("$N$ turns")
+    plt.xscale("log")
+    plt.ylabel("$D (A.U.)$")
+    #plt.ylim(0., 1.)
+    plt.title(
+        "FIT2 v1,\n$dx = {:2.2f}, dth = {:3.3f}, mid\,angle = {:3.3f}$,\n$N Parts = {}, \epsilon = {:2.0f}, \omega_x = {:3.3f}, \omega_y = {:3.3f}$".
+        format(dx, dtheta, angle, N, epsilon[2], epsilon[0], epsilon[1]))
+    # Tweak for legend.
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$A = {:.2} \pm {:.2}$".format(fit_params[4], fit_params[5]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$B = {:.2} \pm {:.2}$".format(
+            np.exp(fit_params[2]),
+            np.exp(fit_params[2]) * fit_params[3]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$k = {:.2} \pm {:.2}$".format(fit_params[0], fit_params[1]))
+    # And then the legend.
+    plt.legend(prop={"size": 7})
+    plt.tight_layout()
+    plt.savefig(
+        "img/fit/fit2v1_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".
         format(epsilon[2], epsilon[0], epsilon[1], angle, N),
         dpi=DPI)
     plt.clf()
@@ -538,6 +716,86 @@ def fit_parameters_evolution2(fit_parameters, label="plot"):
     plt.clf()
 
 
+def fit_parameters_evolution2_v1(fit_parameters, label="plot"):
+    theta = []
+    A = []
+    A_err = []
+    B = []
+    B_err = []
+    k = []
+    k_err = []
+    for N in fit_parameters:
+        theta_temp = []
+        A_temp = []
+        B_temp = []
+        k_temp = []
+        A_temp_err = []
+        B_temp_err = []
+        k_temp_err = []
+        for angle in fit_parameters[N]:
+            theta_temp.append(angle / np.pi)
+            A_temp.append(fit_parameters[N][angle][0])
+            B_temp.append(fit_parameters[N][angle][2])
+            k_temp.append(fit_parameters[N][angle][4])
+            A_temp_err.append(fit_parameters[N][angle][1])
+            B_temp_err.append(fit_parameters[N][angle][3])
+            k_temp_err.append(k_error)
+        theta.append(theta_temp)
+        A.append(A_temp)
+        B.append(B_temp)
+        k.append(k_temp)
+        A_err.append(A_temp_err)
+        B_err.append(B_temp_err)
+        k_err.append(k_temp_err)
+    # print(A)
+    # print(B)
+    for i in range(len(A)):
+        plt.errorbar(
+            theta[i],
+            A[i],
+            yerr=A_err[i],
+            xerr=(0.25 / len(A[i])),
+            linewidth=0,
+            elinewidth=1)
+        plt.xlabel("Theta $(rad / \pi)$")
+        plt.ylabel("Fit value " + "A " + " (A.U.)")
+        plt.title("fit2 v1, " + label + ", " + "A " + "parameter")
+        plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
+        plt.tight_layout()
+    plt.savefig("img/fit/" + "fit2v1" + label + "_A.png", dpi=DPI)
+    plt.clf()
+    for i in range(len(B)):
+        plt.errorbar(
+            theta[i],
+            B[i],
+            yerr=B_err[i],
+            xerr=(0.25 / len(B[i])),
+            linewidth=0,
+            elinewidth=1)
+        plt.xlabel("Theta $(rad / \pi)$")
+        plt.ylabel("Fit value B (A.U.)")
+        plt.title("fit2 v1, " + label + ", B parameter")
+        plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
+        plt.tight_layout()
+    plt.savefig("img/fit/" + "fit2v1" + label + "_B.png", dpi=DPI)
+    plt.clf()
+    for i in range(len(k)):
+        plt.errorbar(
+            theta[i],
+            k[i],
+            yerr=k_err[i],
+            xerr=(0.25 / len(k[i])),
+            linewidth=0,
+            elinewidth=1)
+        plt.xlabel("Theta $(rad / \pi)$")
+        plt.ylabel("Fit value k (A.U.)")
+        plt.title("fit2 v1, " + label + ", k parameter")
+        plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
+        plt.tight_layout()
+    plt.savefig("img/fit/" + "fit2 v1" + label + "_k.png", dpi=DPI)
+    plt.clf()
+
+
 def plot_chi_squared1(fit_params,
                       epsilon,
                       n_partitions=1,
@@ -572,6 +830,7 @@ def plot_chi_squared2(fit_params,
         markersize=0.5,
         linewidth=0.5)
     plt.xlabel("A value")
+    plt.xscale("log")
     plt.ylabel("Chi-Squared value")
     plt.title(
         "non linear FIT2 Chi-Squared evolution, $\epsilon = {:2.0f}$,\n number of partitions $= {}$, central angle $= {:2.2f}$".
@@ -579,6 +838,30 @@ def plot_chi_squared2(fit_params,
     plt.tight_layout()
     plt.savefig(
         "img/fit/fit2_chisquared_eps{:2.0f}_npart{}_central{:2.2f}.png".
+        format(epsilon, n_partitions, angle),
+        dpi=DPI)
+    plt.clf()
+
+
+def plot_chi_squared2_v1(fit_params,
+                      epsilon,
+                      n_partitions=1,
+                      angle=np.pi / 4):
+    plt.plot(
+        list(fit_params.keys()),
+        [x[2] for x in list(fit_params.values())],
+        marker="o",
+        markersize=0.,
+        linewidth=0.5)
+    plt.xlabel("A value")
+    plt.ylabel("Chi-Squared value")
+    plt.ylim(2,3)
+    plt.title(
+        "non linear FIT2 v1 Chi-Squared evolution, $\epsilon = {:2.0f}$,\n number of partitions $= {}$, central angle $= {:2.2f}$".
+        format(epsilon, n_partitions, angle))
+    plt.tight_layout()
+    plt.savefig(
+        "img/fit/fit2v1_chisquared_eps{:2.0f}_npart{}_central{:2.2f}.png".
         format(epsilon, n_partitions, angle),
         dpi=DPI)
     plt.clf()
@@ -597,7 +880,6 @@ def plot_chi_squared2(fit_params,
 sigmas = [0.2, 0.25, 0.5, 0.75, 1]
 
 # Functions
-
 
 def intensity_zero_gaussian(x, y, sigma_x=1, sigma_y=1):
     return (1 / (2 * np.pi * sigma_x * sigma_y)) * np.exp(-(
@@ -984,6 +1266,7 @@ def lhc_plot_chi_squared2(data, folder, kind):
                  marker='o',
                  markersize=0.0)
     plt.xlabel("A value")
+    plt.xscale("log")
     plt.ylabel("Chi-Squared value")
     plt.title("Behaviour of Chi-Squared function in non linear fit part")
     plt.tight_layout()

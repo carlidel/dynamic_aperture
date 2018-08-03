@@ -10,9 +10,9 @@ k_max = 7.
 k_min = -10.
 dk = 0.1
 
-A_max = 100.
-A_min = 0.1
-dA = 0.1
+dA = 0.0001
+A_max = 0.01
+A_min = 0.001 + dA ### under this value it is just wrong
 
 dx = 0.01
 
@@ -25,11 +25,11 @@ lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 # temporary removal of high epsilons for performance:
 #i = 0
 #for epsilon in sorted(data.keys()):
-#    if i > 4:
+#    if i > 9:
 #        del data[epsilon]
 #        del lin_data[epsilon]
 #    i += 1
-## end temporary
+# end temporary
 
 contour_data = {}
 for epsilon in data:
@@ -46,12 +46,10 @@ for epsilon in sorted(data):
     dynamic_aperture[epsilon] = dyn_temp
 
 #%%
-print("Fit on Partitions")
+print("Fit on Partitions1")
 
 fit_parameters1 = {}
-fit_parameters2 = {}
 best_fit_parameters1 = {}
-best_fit_parameters2 = {}
 
 for epsilon in dynamic_aperture:
     print(epsilon)
@@ -74,6 +72,18 @@ for epsilon in dynamic_aperture:
     fit_parameters1[epsilon] = fit_parameters_epsilon
     best_fit_parameters1[epsilon] = best_fit_parameters_epsilon
 
+#%%
+print("Fit on Partitions2")
+
+dA = 0.0001
+A_max = 0.01
+A_min = 0.001 ### under this value it doesn't converge
+
+fit_parameters2 = {}
+best_fit_parameters2 = {}
+
+for epsilon in dynamic_aperture:
+    print(epsilon)
     # fit2
     fit_parameters_epsilon = {}
     best_fit_parameters_epsilon = {}
@@ -82,11 +92,33 @@ for epsilon in dynamic_aperture:
         fit = {}
         best = {}
         for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+            scale_search = 1.
+            print(scale_search)
             fit[angle] = non_linear_fit2(
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                n_turns, A_min, A_max, dA)
+                n_turns,
+                A_min,
+                A_max * scale_search,
+                dA * scale_search)
             best[angle] = select_best_fit2(fit[angle])
+            ### Is this a naive minimum in the chi squared?
+            while (best[angle][4] >= A_max * scale_search - dA * scale_search
+                   and scale_search <= 1e50):
+                print("Minimum naive! Increase scale_search!")
+                A_min_new = A_max * scale_search
+                scale_search *= 10.
+                if scale_search > 1e50:
+                    print("Maximum scale reached! This will be the last fit.")
+                print(scale_search)
+                fit[angle] = non_linear_fit2(
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                    n_turns,
+                    A_min_new,
+                    A_max * scale_search,
+                    dA * scale_search)
+                best[angle] = select_best_fit2(fit[angle])
         fit_parameters_epsilon[len(partition_list) - 1] = fit
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
 
@@ -94,28 +126,130 @@ for epsilon in dynamic_aperture:
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
 
 #%%
-print("Plot fits from simulation.")
 
+dA = 0.001
+A_max = 5.
+A_min = 0.00
+shift = - np.log10(n_turns[0]) + dA
+    
+
+print("Fit on Partitions2v1")
+
+fit_parameters2_v1 = {}
+best_fit_parameters2_v1 = {}
+
+for epsilon in dynamic_aperture:
+    print(epsilon)
+    # fit2
+    fit_parameters_epsilon = {}
+    best_fit_parameters_epsilon = {}
+
+    for partition_list in partition_lists:
+        fit = {}
+        best = {}
+        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+            scale_search = 1.
+            print(scale_search)
+            fit[angle] = non_linear_fit2_v1(
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                n_turns,
+                A_min + shift,
+                A_max + shift,
+                dA)
+            best[angle] = select_best_fit2_v1(fit[angle])
+            ### Is this a naive minimum in the chi squared?
+            while (best[angle][4] >= A_max * scale_search - dA * scale_search +
+                   shift and scale_search <= 1e50):
+                print("Minimum naive! Increase scale_search!")
+                A_min_new = A_max * scale_search
+                scale_search *= 10.
+                if scale_search > 1e50:
+                    print("Maximum scale reached! This will be the last fit.")
+                print(scale_search)
+                fit[angle] = non_linear_fit2_v1(
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                    n_turns,
+                    A_min + shift,
+                    A_max * scale_search + shift,
+                    dA * scale_search)
+                best[angle] = select_best_fit2_v1(fit[angle])
+        fit_parameters_epsilon[len(partition_list) - 1] = fit
+        best_fit_parameters_epsilon[len(partition_list) - 1] = best
+
+    fit_parameters2_v1[epsilon] = fit_parameters_epsilon
+    best_fit_parameters2_v1[epsilon] = best_fit_parameters_epsilon
+
+#%%
+print("Fit naive on simulation 2. (in order to test it!)")
+
+best_fit_parameters2 = {}
+for epsilon in dynamic_aperture:
+    print(epsilon)
+    # fit2
+    best_fit_parameters_epsilon = {}
+
+    for partition_list in partition_lists:
+        best = {}
+        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+            best[angle] = non_linear_fit2_naive(
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                n_turns,
+                0.1, 10., 10.1)
+        best_fit_parameters_epsilon[len(partition_list) - 1] = best
+    best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
+
+#%%
+print("Plot fits from simulation 1.")
 for epsilon in best_fit_parameters1:
     #for n_angles in best_fit_parameters1[epsilon]:
     for angle in best_fit_parameters1[epsilon][1]:
         plot_fit_basic1(best_fit_parameters1[epsilon][1][angle],
                         1, epsilon, angle, n_turns,
                         dynamic_aperture)
+#%%
+print("Plot fits from simulation 2.")
+for epsilon in best_fit_parameters2:
+    #for n_angles in best_fit_parameters1[epsilon]:
+    for angle in best_fit_parameters2[epsilon][1]:
         plot_fit_basic2(best_fit_parameters2[epsilon][1][angle],
                         1, epsilon, angle, n_turns,
                         dynamic_aperture)
 
 #%%
-print("Compare chi squared fits.")
+print("Plot fits from simulation 2 v1.")
+for epsilon in best_fit_parameters2_v1:
+    #for n_angles in best_fit_parameters1[epsilon]:
+    for angle in best_fit_parameters2_v1[epsilon][1]:
+        plot_fit_basic2_v1(best_fit_parameters2_v1[epsilon][1][angle],
+                           1, epsilon, angle, n_turns,
+                           dynamic_aperture)
 
+#%%
+print("Compare chi squared fits1.")
 for epsilon in fit_parameters1:
     for angle in fit_parameters1[epsilon][1]:
         plot_chi_squared1(fit_parameters1[epsilon][1][angle],
                           epsilon[2],
                           1,
                           angle)
+
+#%%
+print("Compare chi squared fits2.")
+for epsilon in fit_parameters2:
+    for angle in fit_parameters2[epsilon][1]:
         plot_chi_squared2(fit_parameters2[epsilon][1][angle],
+                          epsilon[2],
+                          1,
+                          angle)
+
+#%%
+print("Compare chi squared fits2 v1.")
+for epsilon in fit_parameters2_v1:
+    for angle in fit_parameters2_v1[epsilon][1]:
+        plot_chi_squared2_v1(fit_parameters2_v1[epsilon][1][angle],
                           epsilon[2],
                           1,
                           angle)
@@ -640,35 +774,46 @@ for sigma in sigmas:
             "img/loss/loss_anglescan_and_Dfits_sig{:2.2f}_eps{:2.0f}.png".format(
                 sigma, epsilon[2]), dpi=DPI)
         plt.clf()
+#%%
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+
+from fit_library import *
+
+#%%
+# Search parameters
+k_max = 7.
+k_min = -10.
+dk = 0.1
+
+dA = 0.0001
+A_max = 0.01
+A_min = 0.001 ### under this value it doesn't converge
 
 #%%
 print("LHC data.")
 lhc_data = pickle.load(open("LHC_DATA.pkl", "rb"))
-lhc_data = remove_first_times_lhc(lhc_data, 500)
+lhc_data = remove_first_times_lhc(lhc_data, 1000)
 
 #%%
-print("compute fits")
+print("compute fits1")
 
 fit_lhc1 = {}
-fit_lhc2 = {}
 best_fit_lhc1 = {}
-best_fit_lhc2 = {}
 
 for label in lhc_data:
     fit_lhc1_label = {}
-    fit_lhc2_label = {}
     best_fit_lhc1_label = {}
-    best_fit_lhc2_label = {}
     for i in lhc_data[label]:
         j = 0
         print(label, i)
         fit_lhc1_correction = []
-        fit_lhc2_correction = []
         best_fit_lhc1_correction = []
-        best_fit_lhc2_correction = []
         for seed in lhc_data[label][i]:
             print(j)
             j += 1
+            # FIT1
             fit_lhc1_correction.append(
                                 non_linear_fit1(seed,
                                                 sigma_filler(seed, 0.05),
@@ -679,6 +824,30 @@ for label in lhc_data:
             best_fit_lhc1_correction.append(
                                 select_best_fit1(fit_lhc1_correction[-1]))
 
+        fit_lhc1_label[i] = fit_lhc1_correction
+        best_fit_lhc1_label[i] = best_fit_lhc1_correction
+    fit_lhc1[label] = fit_lhc1_label
+    best_fit_lhc1[label] = best_fit_lhc1_label
+
+#%%
+print("compute fits2")
+
+fit_lhc2 = {}
+best_fit_lhc2 = {}
+
+for label in lhc_data:
+    fit_lhc2_label = {}
+    best_fit_lhc2_label = {}
+    for i in lhc_data[label]:
+        j = 0
+        print(label, i)
+        fit_lhc2_correction = []
+        best_fit_lhc2_correction = []
+        for seed in lhc_data[label][i]:
+            print(j)
+            j += 1
+            scale_search = 1.
+            # FIT2
             fit_lhc2_correction.append(
                                 non_linear_fit2(seed,
                                                 sigma_filler(seed, 0.05),
@@ -688,15 +857,108 @@ for label in lhc_data:
                                                 dA))
             best_fit_lhc2_correction.append(
                                 select_best_fit2(fit_lhc2_correction[-1]))
-        fit_lhc1_label[i] = fit_lhc1_correction
+            ### Is this a naive minimum in the chi squared?
+            while (best_fit_lhc2_correction[-1][4] >= (A_max * scale_search 
+                    - dA * scale_search) and scale_search <= 1e20):
+                print("Minimum naive! Increase scale_search!")
+                A_min_new = A_max * scale_search
+                scale_search *= 10.
+                if scale_search > 1e20:
+                    print("Maximum scale reached! This will be the last fit.")
+                print(scale_search)
+                fit_lhc2_correction[-1] = non_linear_fit2(
+                                                seed,
+                                                sigma_filler(seed, 0.05),
+                                                np.asarray(sorted(seed.keys())),
+                                                A_min_new,
+                                                A_max * scale_search,
+                                                dA * scale_search)
+                best_fit_lhc2_correction[-1] = select_best_fit2(
+                                                fit_lhc2_correction[-1])
         fit_lhc2_label[i] = fit_lhc2_correction
-        best_fit_lhc1_label[i] = best_fit_lhc1_correction
         best_fit_lhc2_label[i] = best_fit_lhc2_correction
-    fit_lhc1[label] = fit_lhc1_label
     fit_lhc2[label] = fit_lhc2_label
-    best_fit_lhc1[label] = best_fit_lhc1_label
     best_fit_lhc2[label] = best_fit_lhc2_label
 
+#%%
+print("Compute FIT2 v1")
+
+dA = 0.01
+A_max = 2.
+A_min = 0.00
+shift = - np.log10(1000) + dA
+
+fit_lhc2 = {}
+best_fit_lhc2 = {}
+
+for label in lhc_data:
+    fit_lhc2_label = {}
+    best_fit_lhc2_label = {}
+    for i in lhc_data[label]:
+        j = 0
+        print(label, i)
+        fit_lhc2_correction = []
+        best_fit_lhc2_correction = []
+        for seed in lhc_data[label][i]:
+            print(j)
+            j += 1
+            scale_search = 1.
+            # FIT2
+            fit_lhc2_correction.append(
+                                non_linear_fit2_v1(seed,
+                                                sigma_filler(seed, 0.05),
+                                                np.asarray(sorted(seed.keys())),
+                                                A_min + shift,
+                                                A_max + shift,
+                                                dA))
+            best_fit_lhc2_correction.append(
+                                select_best_fit2(fit_lhc2_correction[-1]))
+            ### Is this a naive minimum in the chi squared?
+            while (best_fit_lhc2_correction[-1][4] >= (A_max * scale_search 
+                    - dA * scale_search + shift) and scale_search <= 1e20):
+                print("Minimum naive! Increase scale_search!")
+                A_min_new = A_max * scale_search
+                scale_search *= 10.
+                if scale_search > 1e20:
+                    print("Maximum scale reached! This will be the last fit.")
+                print(scale_search)
+                fit_lhc2_correction[-1] = non_linear_fit2_v1(
+                                                seed,
+                                                sigma_filler(seed, 0.05),
+                                                np.asarray(sorted(seed.keys())),
+                                                A_min + shift,
+                                                A_max * scale_search + shift,
+                                                dA * scale_search)
+                best_fit_lhc2_correction[-1] = select_best_fit2_v1(
+                                                fit_lhc2_correction[-1])
+        fit_lhc2_label[i] = fit_lhc2_correction
+        best_fit_lhc2_label[i] = best_fit_lhc2_correction
+    fit_lhc2[label] = fit_lhc2_label
+    best_fit_lhc2[label] = best_fit_lhc2_label
+
+#%%
+print("Compute (stupid) FIT2")
+best_fit_lhc2 = {}
+
+for label in lhc_data:
+    best_fit_lhc2_label = {}
+    for i in lhc_data[label]:
+        j = 0
+        print(label, i)
+        best_fit_lhc2_correction = []
+        for seed in lhc_data[label][i]:
+            print(j)
+            j += 1
+            # FIT2
+            best_fit_lhc2_correction.append(
+                                non_linear_fit2_naive(seed,
+                                                sigma_filler(seed, 0.05),
+                                                np.asarray(sorted(seed.keys())),
+                                                0.1, 0.1, 1))
+        best_fit_lhc2_label[i] = best_fit_lhc2_correction
+    best_fit_lhc2[label] = best_fit_lhc2_label
+
+#%%
 # takes a long time, better to save the progress
 fit_lhc = (fit_lhc1, fit_lhc2, best_fit_lhc1, best_fit_lhc2)
 with open("LHC_FIT.pkl", "wb") as f:
