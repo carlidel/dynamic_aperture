@@ -448,20 +448,32 @@ for sigma in loss_precise:
     for epsilon in loss_precise[sigma]:
         fit_sigma_temp1[epsilon] = select_best_fit1(
             non_linear_fit1(
-                dict(zip(n_turns, processed_data_precise[sigma][epsilon])),
-                dict(zip(n_turns, processed_data_precise[sigma][epsilon] * 0.01)),
+                dict(zip(n_turns,
+                    processed_data_precise[sigma][epsilon])),
+                dict(zip(n_turns,
+                    processed_data_precise[sigma][epsilon] * 0.01)),
                 n_turns,
                 k_min,
                 k_max,
                 dk))
-        fit_sigma_temp2[epsilon] = select_best_fit2(
-            non_linear_fit2(
-                dict(zip(n_turns, processed_data_precise[sigma][epsilon])),
-                dict(zip(n_turns, processed_data_precise[sigma][epsilon] * 0.01)),
-                n_turns,
-                A_min,
-                A_max,
-                dA))
+        scale_search = 1
+        while True:
+            print(scale_search)
+            fit_sigma_temp2[epsilon] = select_best_fit2(
+                non_linear_fit2(
+                    dict(zip(n_turns,
+                        processed_data_precise[sigma][epsilon])),
+                    dict(zip(n_turns,
+                        processed_data_precise[sigma][epsilon] * 0.01)),
+                    n_turns,
+                    A_min,
+                    A_max * scale_search,
+                    dA * scale_search))
+            if (fit_sigma_temp2[epsilon][4] < (A_max - dA) * scale_search or
+                    fit_sigma_temp2[epsilon][4] > 1e10):
+                break
+            else:
+                scale_search *= 10
     fit_precise_loss1[sigma] = fit_sigma_temp1
     fit_precise_loss2[sigma] = fit_sigma_temp2
 
@@ -481,20 +493,32 @@ for sigma in loss_anglescan:
             sigma)
         fit_sigma_temp1[epsilon] = select_best_fit1(
             non_linear_fit1(
-                dict(zip(n_turns, processed_data_anglescan[sigma][epsilon])),
-                dict(zip(n_turns, processed_data_anglescan[sigma][epsilon] * 0.01)),
+                dict(zip(n_turns,
+                    processed_data_anglescan[sigma][epsilon])),
+                dict(zip(n_turns,
+                    processed_data_anglescan[sigma][epsilon] * 0.01)),
                 n_turns,
                 k_min,
                 k_max,
                 dk))
-        fit_sigma_temp2[epsilon] = select_best_fit2(
-            non_linear_fit2(
-                dict(zip(n_turns, processed_data_anglescan[sigma][epsilon])),
-                dict(zip(n_turns, processed_data_anglescan[sigma][epsilon] * 0.01)),
-                n_turns,
-                A_min,
-                A_max,
-                dA))
+        scale_search = 1
+        while True:
+            print(scale_search)
+            fit_sigma_temp2[epsilon] = select_best_fit2(
+                non_linear_fit2(
+                    dict(zip(n_turns,
+                        processed_data_anglescan[sigma][epsilon])),
+                    dict(zip(n_turns,
+                        processed_data_anglescan[sigma][epsilon] * 0.01)),
+                    n_turns,
+                    A_min,
+                    A_max * scale_search,
+                    dA * scale_search))
+            if (fit_sigma_temp2[epsilon][4] < (A_max - dA) * scale_search or
+                    fit_sigma_temp2[epsilon][4] > 1e10):
+                break
+            else:
+                scale_search *= 10
     fit_anglescan_loss1[sigma] = fit_sigma_temp1
     fit_anglescan_loss2[sigma] = fit_sigma_temp2
 
@@ -628,192 +652,70 @@ for sigma in sigmas:
     for epsilon in loss_precise[sigma]:
         print(epsilon)
         ### Just the losses (no fits)
-        plt.plot(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_precise[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="Precise loss")
-        plt.plot(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_anglescan[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="Anglescan loss")
-        plt.xlabel("N turns")
-        plt.xscale("log")
-        plt.xlim(1e3, 1e7)
-        plt.ylabel("Relative Intensity")
-        #plt.ylim(0, 1)
-        plt.title(
-            "Comparison of loss measures (PRECISE and ANGLESCAN),\n" +
-            "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".format(sigma, epsilon[2]))
-        plt.legend(prop={"size": 7})
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(
-            "img/loss/loss_precise_anglescan_sig{:2.2f}_eps{:2.0f}.png".format(
-                sigma, epsilon[2]), dpi=DPI)
-        plt.clf()
-
+        plot_losses(
+            ("Comparison of loss measures (PRECISE and ANGLESCAN),\n" +
+            "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
+            format(sigma, epsilon[2])),
+            ("img/loss/loss_precise_anglescan_sig{:2.2f}_eps{:2.0f}.png".
+            format(sigma, epsilon[2])),
+            n_turns,
+            [loss_precise[sigma][epsilon], loss_anglescan[sigma][epsilon]],
+            ["Precise loss", "Anglescan loss"])
+            
         ### Precise and Precise Fit
-        plt.plot(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_precise[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="Precise loss")
-        plt.errorbar(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_precise_fit1[sigma][epsilon][1:],
-            yerr=loss_precise_fit1_err[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="D loss precise FIT1")
-        plt.errorbar(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_precise_fit2[sigma][epsilon][1:],
-            yerr=loss_precise_fit2_err[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="D loss precise FIT2")
-        plt.title(
-            "Comparison of loss measures (PRECISE with PRECISE FITS),\n" +
-            "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".format(sigma, epsilon[2]))
-        plt.xlabel("N turns")
-        plt.xscale("log")
-        plt.xlim(1e3, 1e7)
-        plt.ylabel("Relative Intensity")
-        plt.legend(prop={"size": 7})
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(
-            "img/loss/loss_precise_and_fits_sig{:2.2f}_eps{:2.0f}.png".format(
-                sigma, epsilon[2]), dpi=DPI)
-        plt.clf()
+        plot_losses(
+            ("Comparison of loss measures (PRECISE with PRECISE FITS),\n" +
+                "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
+                format(sigma, epsilon[2])),
+            ("img/loss/loss_precise_and_fits_sig{:2.2f}_eps{:2.0f}.png".
+                format(sigma, epsilon[2])),
+            n_turns,
+            [loss_precise[sigma][epsilon]],
+            ["Precise loss"],
+            [loss_precise_fit1[sigma][epsilon],
+                loss_precise_fit2[sigma][epsilon]],
+            [loss_precise_fit1_err[sigma][epsilon],
+                loss_precise_fit2_err[sigma][epsilon]],
+            ["D loss precise FIT1", "D loss precise FIT2"])
 
         ### Anglescan and Anglescan Fit
-        plt.plot(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_anglescan[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="Anglescan loss")
-        plt.errorbar(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_anglescan_fit1[sigma][epsilon][1:],
-            yerr=loss_anglescan_fit1_err[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="D loss anglescan FIT1")
-        plt.errorbar(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_anglescan_fit2[sigma][epsilon][1:],
-            yerr=loss_anglescan_fit2_err[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="D loss anglescan FIT2")
-        plt.xlabel("N turns")
-        plt.xscale("log")
-        plt.xlim(1e3, 1e7)
-        plt.ylabel("Relative Intensity")
-        #plt.ylim(0, 1)
-        plt.title(
-            "Comparison of loss measures (ANGLESCAN with ANGLESCAN FITS),\n" +
-            "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".format(sigma, epsilon[2]))
-        plt.legend(prop={"size": 7})
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(
-            "img/loss/loss_anglescan_and_fits_sig{:2.2f}_eps{:2.0f}.png".format(
-                sigma, epsilon[2]), dpi=DPI)
-        plt.clf()
-
+        plot_losses(
+            ("Comparison of loss measures (anglescan with anglescan FITS),\n" +
+                            "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
+                            format(sigma, epsilon[2])),
+            ("img/loss/loss_anglescan_and_fits_sig{:2.2f}_eps{:2.0f}.png".
+                            format(sigma, epsilon[2])),
+            n_turns,
+            [loss_anglescan[sigma][epsilon]],
+            ["Precise loss"],
+            [loss_anglescan_fit1[sigma][epsilon],
+                loss_anglescan_fit2[sigma][epsilon]],
+            [loss_anglescan_fit1_err[sigma][epsilon],
+                loss_anglescan_fit2_err[sigma][epsilon]],
+            ["D loss anglescan FIT1", "D loss anglescan FIT2"])
+        
         ### Precise and D Fits
-        plt.plot(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_precise[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="Precise loss")
-        for N in loss_D_fit1[sigma][epsilon]:
-            plt.errorbar(
-                np.concatenate((np.array([0]), n_turns))[1:],
-                loss_D_fit1[sigma][epsilon][N][1:],
-                yerr = loss_D_fit1_err[sigma][epsilon][N][1:],
-                linewidth=0.5,
-                label="D loss FIT1, N $= {}$".format(N))
-            # plt.plot(
-            #     np.concatenate((np.array([0]), n_turns))[1:],
-            #     np.absolute(loss_precise[sigma][epsilon] -
-            #                 loss_D_fit1[sigma][epsilon][N])[1:],
-            #     linewidth=0.5,
-            #     label="Difference FIT1, N part $= {}$".format(N))
-            plt.errorbar(
-                np.concatenate((np.array([0]), n_turns))[1:],
-                loss_D_fit2[sigma][epsilon][N][1:],
-                yerr = loss_D_fit2_err[sigma][epsilon][N][1:],
-                linewidth=0.5,
-                label="D loss FIT2, N $= {}$".format(N))
-            # plt.plot(
-            #     np.concatenate((np.array([0]), n_turns))[1:],
-            #     np.absolute(loss_precise[sigma][epsilon] -
-            #                 loss_D_fit2[sigma][epsilon][N])[1:],
-            #     linewidth=0.5,
-            #     label="Difference FIT2, N part $= {}$".format(N))
-        plt.xlabel("N turns")
-        plt.xscale("log")
-        plt.xlim(1e3, 1e7)
-        plt.ylabel("Relative Intensity")
-        #plt.ylim(0, 1)
-        plt.title(
-            "Comparison of loss measures (PRECISE with D FITS),\n" +
-            "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".format(sigma, epsilon[2]))
-        plt.legend(prop={"size": 7})
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(
-            "img/loss/loss_precise_and_Dfits_sig{:2.2f}_eps{:2.0f}.png".format(
-                sigma, epsilon[2]), dpi=DPI)
-        plt.clf()
-
-        ### Anglescan and D Fits
-        plt.plot(
-            np.concatenate((np.array([0]), n_turns))[1:],
-            loss_anglescan[sigma][epsilon][1:],
-            linewidth=0.5,
-            label="Anglescan loss")
-        for N in loss_D_fit1[sigma][epsilon]:
-            plt.errorbar(
-                np.concatenate((np.array([0]), n_turns))[1:],
-                loss_D_fit1[sigma][epsilon][N][1:],
-                yerr = loss_D_fit1_err[sigma][epsilon][N][1:],
-                linewidth=0.5,
-                label="D loss FIT1, N $= {}$".format(N))
-            # plt.plot(
-            #     np.concatenate((np.array([0]), n_turns))[1:],
-            #     np.absolute(loss_precise[sigma][epsilon] -
-            #                 loss_D_fit1[sigma][epsilon][N])[1:],
-            #     linewidth=0.5,
-            #     label="Difference FIT1, N part $= {}$".format(N))
-            plt.errorbar(
-                np.concatenate((np.array([0]), n_turns))[1:],
-                loss_D_fit2[sigma][epsilon][N][1:],
-                yerr = loss_D_fit2_err[sigma][epsilon][N][1:],
-                linewidth=0.5,
-                label="D loss FIT2, N $= {}$".format(N))
-            # plt.plot(
-            #     np.concatenate((np.array([0]), n_turns))[1:],
-            #     np.absolute(loss_precise[sigma][epsilon] -
-            #                 loss_D_fit2[sigma][epsilon][N])[1:],
-            #     linewidth=0.5,
-            #     label="Difference FIT2, N part $= {}$".format(N))
-        plt.xlabel("N turns")
-        plt.xscale("log")
-        plt.xlim(1e3, 1e7)
-        plt.ylabel("Relative Intensity")
-        #plt.ylim(0, 1)
-        plt.title(
-            "Comparison of loss measures (ANGLESCAN with D FITS),\n" +
-            "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".format(sigma, epsilon[2]))
-        plt.legend(prop={"size": 7})
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(
-            "img/loss/loss_anglescan_and_Dfits_sig{:2.2f}_eps{:2.0f}.png".format(
-                sigma, epsilon[2]), dpi=DPI)
-        plt.clf()
+        plot_losses(
+            ("Comparison of loss measures (ANGLESCAN with D FITS),\n" +
+                        "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
+                        format(sigma, epsilon[2])),
+            ("img/loss/loss_anglescan_and_Dfits_sig{:2.2f}_eps{:2.0f}.png".
+                        format(sigma, epsilon[2])),
+            n_turns,
+            [loss_anglescan[sigma][epsilon]],
+            ["Anglescan loss"],
+            [loss_D_fit1[sigma][epsilon][N] 
+                for N in loss_D_fit1[sigma][epsilon]] + 
+                [loss_D_fit2[sigma][epsilon][N] 
+                for N in loss_D_fit2[sigma][epsilon]],
+            [loss_D_fit1_err[sigma][epsilon][N] 
+                for N in loss_D_fit1_err[sigma][epsilon]] + 
+                [loss_D_fit2_err[sigma][epsilon][N] 
+                for N in loss_D_fit2_err[sigma][epsilon]],
+            ["D loss FIT1, N $= {}$".format(N)
+                for N in loss_D_fit1[sigma][epsilon]] +
+                ["D loss FIT2, N $= {}$".format(N)
+                for N in loss_D_fit2[sigma][epsilon]])
 
 ################################################################################
 ################################################################################

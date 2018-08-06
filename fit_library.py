@@ -1095,6 +1095,35 @@ def error_loss_estimation_single_partition(best_fit_params, fit_func,
 ################################################################################
 ################################################################################
 
+
+def plot_losses(title, filename,
+                n_turns, data_list=[], data_label_list=[],
+                param_list=[], param_error_list=[], param_label_list=[]):
+    for i in range(len(data_list)):
+        plt.plot(
+            n_turns,
+            data_list[i][1:],
+            linewidth=0.5,
+            label=data_label_list[i])
+    for i in range(len(param_list)):
+        plt.errorbar(
+            n_turns,
+            param_list[i][1:],
+            yerr=param_error_list[i][1:],
+            linewidth=0.5,
+            label=param_label_list[i])
+    plt.title(title)
+    plt.xlabel("N turns")
+    plt.xscale("log")
+    plt.xlim(1e3, 1e7)
+    plt.ylabel("Relative Intensity")
+    plt.legend(prop={"size": 7})
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=DPI)  
+    plt.clf()
+
+
 def plot_4_different_fits(params1,
                           params2,
                           params3,
