@@ -19,7 +19,7 @@ dx = 0.01
 #%%
 print("load data")
 
-data = pickle.load(open("radscan_dx01_firstonly_dictionary.pkl", "rb"))
+data = pickle.load(open("radscan_dx01_firstonly_manyepsilons_dictionary.pkl", "rb"))
 lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 
 # temporary removal of high epsilons for performance:
@@ -31,6 +31,7 @@ lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 #    i += 1
 # end temporary
 
+#%%
 contour_data = {}
 for epsilon in data:
     contour_data[epsilon] = make_countour_data(data[epsilon], n_turns, dx)
@@ -115,7 +116,7 @@ for epsilon in dynamic_aperture:
                     dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
                     dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
                     n_turns,
-                    A_min_new,
+                    A_min,
                     A_max * scale_search,
                     dA * scale_search)
                 best[angle] = select_best_fit2(fit[angle])
@@ -253,6 +254,20 @@ for epsilon in fit_parameters2_v1:
                           epsilon[2],
                           1,
                           angle)
+
+#%%
+print("Fit1 param evolution over epsilon.")
+temp = list(best_fit_parameters1.keys())[0]
+for N in best_fit_parameters1[temp]:
+    for angle in (best_fit_parameters1[temp][N]):
+        fit_params_over_epsilon1(best_fit_parameters1, N, angle)
+                      
+#%%
+print("Fit2 param evolution over epsilon")
+temp = list(best_fit_parameters2.keys())[0]
+for N in best_fit_parameters2[temp]:
+    for angle in (best_fit_parameters2[temp][N]):
+        fit_params_over_epsilon2(best_fit_parameters2, N, angle)
 
 #%%
 print("Is this loss?")
@@ -982,7 +997,7 @@ for folder in lhc_data:
         plot_lhc_fit(best_fit_lhc1[folder][kind], lhc_data[folder][kind],
                      pass_params_fit1, folder + kind + "f1")
         plot_lhc_fit(best_fit_lhc2[folder][kind], lhc_data[folder][kind],
-                     pass_params_fit2, folder + kind + "f2")
+                     pass_params_fit2_v1, folder + kind + "f2")
 
 #%%
 print("lhc best fit distribution")
