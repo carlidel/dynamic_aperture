@@ -511,8 +511,7 @@ def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
     plt.clf()
 
 
-def plot_fit_basic2_v1(fit_params, N, epsilon, angle, n_turns,
-                       dynamic_aperture):
+def plot_fit_basic2_v1(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
     plt.errorbar(
         n_turns, [dynamic_aperture[epsilon][N][angle][0][i] for i in n_turns],
         yerr=[dynamic_aperture[epsilon][N][angle][1][i] for i in n_turns],
@@ -886,7 +885,7 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$D_\infty$ value")
-    plt.title("$D_\infty$ parameter evolution over $\epsilon$\n"+
+    plt.title("FIT1 $D_\infty$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
     plt.savefig("img/fit/f1param_eps_D_N{}_ang{:2.2f}.png".
@@ -905,7 +904,7 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$b$ value")
-    plt.title("$b$ parameter evolution over $\epsilon$\n"+
+    plt.title("FIT1 $b$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
     plt.savefig("img/fit/f1param_eps_b_N{}_ang{:2.2f}.png".
@@ -924,7 +923,7 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$k$ value")
-    plt.title("$k$ parameter evolution over $\epsilon$\n"+
+    plt.title("FIT1 $k$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
     plt.savefig("img/fit/f1param_eps_k_N{}_ang{:2.2f}.png".
@@ -946,7 +945,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$k$ value")
-    plt.title("$k$ parameter evolution over $\epsilon$\n"+
+    plt.title("FIT2 $k$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
     plt.savefig("img/fit/f2param_eps_k_N{}_ang{:2.2f}.png".
@@ -965,7 +964,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$B$ value")
-    plt.title("$B$ parameter evolution over $\epsilon$\n"+
+    plt.title("FIT2 $B$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
     plt.savefig("img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".
@@ -984,7 +983,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$A$ value")
-    plt.title("$A$ parameter evolution over $\epsilon$\n"+
+    plt.title("FIT2 $A$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
     plt.savefig("img/fit/f2param_eps_A_N{}_ang{:2.2f}.png".
@@ -1031,7 +1030,7 @@ def loss_from_anglescan(contour, time, sigma=1):
 
 def grid_intensity(grid, dx=dx):
     # TODO :: IMPROVE?
-    return integrate.simps(integrate.simps(grid, dx=dx), dx=dx)
+    return integrate.trapz(integrate.trapz(grid, dx=dx), dx=dx)
 
 
 def single_partition_intensity(best_fit_params, pass_par_func, time, sigma):
@@ -1151,6 +1150,13 @@ def plot_4_different_fits(params1,
         dpi=DPI)
     plt.clf()
 
+################################################################################
+################################################################################
+################################################################################
+###  LHC COMPUTATION AND PLOTTING FUNCTIONS   ##################################
+################################################################################
+################################################################################
+################################################################################
 
 def remove_first_times_lhc(data, lower_bound):
     for folder in data:
@@ -1169,16 +1175,8 @@ def sigma_filler(data_dict, perc):
     return sigma_dict
 
 
-################################################################################
-################################################################################
-################################################################################
-###  LHC COMPUTATION AND PLOTTING FUNCTIONS   ##################################
-################################################################################
-################################################################################
-################################################################################
-
-
-def plot_lhc_fit(best_fit, data, func, label):
+def plot_lhc_fit(best_fit, data, func, label, fit1_p, fit2_b):
+    j = 0
     for i in range(len(data)):
         plt.plot(
             sorted(data[i]), [data[i][x] for x in sorted(data[i])],
@@ -1190,9 +1188,10 @@ def plot_lhc_fit(best_fit, data, func, label):
         plt.plot(
             sorted(data[i]),
             func(sorted(data[i]), best_fit[i]),
-            'g--',
+            ('g' if fit1_p[j] else 'r') + ('--' if fit2_b[j] else ''),
             linewidth=0.5,
             label='fit {}'.format(i))
+        j += 1
     plt.xlabel("N turns")
     # plt.xscale("log")
     plt.ylabel("D (A.U.)")
@@ -1366,14 +1365,16 @@ def lhc_2param_comparison2(params, label="plot"):
     plt.clf()
 
 
-def lhc_plot_chi_squared1(data, folder, kind):
+def lhc_plot_chi_squared1(data, folder, kind, fit1_p, fit2_b):
+    j = 0
     for seed in data:
         plt.plot(sorted(seed), 
                  [seed[x][2] for x in sorted(seed)],
-                 'g--',
+                 ('g' if fit1_p[j] else 'r') + ('--' if fit2_b[j] else ''),
                  linewidth=0.3,
                  marker='o',
                  markersize=0.0)
+        j += 1
     plt.xlabel("k value")
     plt.ylabel("Chi-Squared value")
     plt.title("Behaviour of Chi-Squared function in non linear fit part")
@@ -1382,14 +1383,16 @@ def lhc_plot_chi_squared1(data, folder, kind):
                 dpi=DPI)
     plt.clf()
 
-def lhc_plot_chi_squared2(data, folder, kind):
+def lhc_plot_chi_squared2(data, folder, kind, fit1_p, fit2_b):
+    j = 0
     for seed in data:
         plt.plot(sorted(seed), 
                  [seed[x][2] for x in sorted(seed)],
-                 'g--',
+                 ('g' if fit1_p[j] else 'r') + ('--' if fit2_b[j] else ''),
                  linewidth=0.3,
                  marker='o',
                  markersize=0.0)
+        j += 1
     plt.xlabel("A value")
     plt.xscale("log")
     plt.ylabel("Chi-Squared value")
@@ -1409,8 +1412,9 @@ def combine_plots_lhc1(folder, kind):
     img6 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_Dk.png")
     img7 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_Bk.png")
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
+    img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((filler, img1, img8), axis=1)
+    row1 = np.concatenate((img9, img1, img8), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
@@ -1426,9 +1430,39 @@ def combine_plots_lhc2(folder, kind):
     img6 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_Ak.png")
     img7 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_Bk.png")
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
+    img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((filler, img1, img8), axis=1)
+    row1 = np.concatenate((img9, img1, img8), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
     cv2.imwrite("img/lhc/lhc_bigpicture_" + "f2" + folder + kind + ".png", image)
+
+
+################################################################################
+################################################################################
+################################################################################
+###  GENERAL AND RANDOM FUNCTIONS  #############################################
+################################################################################
+################################################################################
+################################################################################
+
+def combine_image_3x3(imgname, path1, path2="none", path3="none", path4="none",
+                      path5="none", path6="none", path7="none", path8="none",
+                      path9="none"):
+    img1 = cv2.imread(path1)
+    filler = np.zeros(img1.shape)
+    img2 = cv2.imread(path2) if path2 is not "none" else filler
+    img3 = cv2.imread(path3) if path3 is not "none" else filler
+    img4 = cv2.imread(path4) if path4 is not "none" else filler
+    img5 = cv2.imread(path5) if path5 is not "none" else filler
+    img6 = cv2.imread(path6) if path6 is not "none" else filler
+    img7 = cv2.imread(path7) if path7 is not "none" else filler
+    img8 = cv2.imread(path8) if path8 is not "none" else filler
+    img9 = cv2.imread(path9) if path9 is not "none" else filler
+    row1 = np.concatenate((img1, img2, img3), axis=1)
+    row2 = np.concatenate((img4, img5, img6), axis=1)
+    row3 = np.concatenate((img7, img8, img9), axis=1)
+    image = np.concatenate((row1, row2, row3), axis=0)
+    cv2.imwrite(imgname, image)
+    

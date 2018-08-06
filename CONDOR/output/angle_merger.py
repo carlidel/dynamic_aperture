@@ -1,7 +1,7 @@
 import pickle
 
-cluster_id = "radscan.472128."
-job_numbers = 50
+cluster_id = "radscan.477738."
+job_numbers = 70
 
 def process_file(filename):
 	file = open(filename, mode='r')
@@ -47,5 +47,5 @@ for i in range(job_numbers):
 
 #print(dictionary[1])
 
-with open("radscan_dx001_firstonly_dictionary_second.pkl", "wb") as f:
+with open("radscan_dx01_firstonly_dictionary_third.pkl", "wb") as f:
 	pickle.dump(dictionary, f, pickle.HIGHEST_PROTOCOL)

@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 
 from fit_library import *
 
+################################################################################
+################################################################################
+################################################################################
+###  FIRST PART - BASIC FITS ON HENNON MAPS  ###################################
+################################################################################
+################################################################################
+################################################################################
+
 #%%
 # Search parameters
 k_max = 7.
@@ -270,6 +278,25 @@ for N in best_fit_parameters2[temp]:
         fit_params_over_epsilon2(best_fit_parameters2, N, angle)
 
 #%%
+print("compose fit over epsilon.")
+combine_image_3x3("img/fit/params_over_epsilon.png",
+                  "img/fit/f1param_eps_D_N1_ang0.79.png",
+                  "img/fit/f1param_eps_b_N1_ang0.79.png",
+                  "img/fit/f1param_eps_k_N1_ang0.79.png",
+                  "img/fit/f2param_eps_A_N1_ang0.79.png",
+                  "img/fit/f2param_eps_B_N1_ang0.79.png",
+                  "img/fit/f2param_eps_k_N1_ang0.79.png")
+
+
+################################################################################
+################################################################################
+################################################################################
+###  SECOND PART - LOSS COMPUTATION AND FITS  ##################################
+################################################################################
+################################################################################
+################################################################################
+
+#%%
 print("Is this loss?")
 
 # Weights at beginning
@@ -286,9 +313,9 @@ loss_D_fit2_err = {}
 for sigma in sigmas:
     print(sigma)
     weights = np.array([[
-        intensity_zero_gaussian(x * dx, y * dx, sigma, sigma)
-        for x in range(80)
-    ] for y in range(80)])
+            intensity_zero_gaussian(x * dx, y * dx, sigma, sigma)
+            for x in range(80)
+        ] for y in range(80)])
     I0 = grid_intensity(
         np.array([[
             intensity_zero_gaussian(x * dx, y * dx, sigma, sigma)
@@ -296,7 +323,6 @@ for sigma in sigmas:
         ] for y in range(1000)]))
 
     print("precise")
-
     loss_precise_temp = {}
     for epsilon in lin_data:
         print(epsilon)
@@ -311,7 +337,6 @@ for sigma in sigmas:
     loss_precise[sigma] = loss_precise_temp
 
     print("anglescan")
-
     loss_anglescan_temp = {}
     for epsilon in lin_data:
         print(epsilon)
@@ -789,6 +814,15 @@ for sigma in sigmas:
             "img/loss/loss_anglescan_and_Dfits_sig{:2.2f}_eps{:2.0f}.png".format(
                 sigma, epsilon[2]), dpi=DPI)
         plt.clf()
+
+################################################################################
+################################################################################
+################################################################################
+###  PART THREE - LHC FITS AND ANALYSIS  #######################################
+################################################################################
+################################################################################
+################################################################################
+
 #%%
 import pickle
 import numpy as np
@@ -874,11 +908,11 @@ for label in lhc_data:
                                 select_best_fit2(fit_lhc2_correction[-1]))
             ### Is this a naive minimum in the chi squared?
             while (best_fit_lhc2_correction[-1][4] >= (A_max * scale_search 
-                    - dA * scale_search) and scale_search <= 1e20):
+                    - dA * scale_search) and scale_search <= 1e10):
                 print("Minimum naive! Increase scale_search!")
                 A_min_new = A_max * scale_search
                 scale_search *= 10.
-                if scale_search > 1e20:
+                if scale_search > 1e10:
                     print("Maximum scale reached! This will be the last fit.")
                 print(scale_search)
                 fit_lhc2_correction[-1] = non_linear_fit2(
@@ -930,11 +964,11 @@ for label in lhc_data:
                                 select_best_fit2(fit_lhc2_correction[-1]))
             ### Is this a naive minimum in the chi squared?
             while (best_fit_lhc2_correction[-1][4] >= (A_max * scale_search 
-                    - dA * scale_search + shift) and scale_search <= 1e20):
+                    - dA * scale_search + shift) and scale_search <= 1e10):
                 print("Minimum naive! Increase scale_search!")
                 A_min_new = A_max * scale_search
                 scale_search *= 10.
-                if scale_search > 1e20:
+                if scale_search > 1e10:
                     print("Maximum scale reached! This will be the last fit.")
                 print(scale_search)
                 fit_lhc2_correction[-1] = non_linear_fit2_v1(
@@ -989,15 +1023,45 @@ best_fit_lhc1 = fit_lhc[2]
 best_fit_lhc2 = fit_lhc[3]
 
 #%%
+print("Is fit1 positive? Is fit2 bounded in A?")
+fit1_lhc_pos = {}
+fit2_lhc_bound = {}
+correlation = {}
+for folder in best_fit_lhc1:
+    fit1_pos_folder = {}
+    fit2_bound_folder = {}
+    correlation_folder = {}
+    for kind in best_fit_lhc1[folder]:
+        fit1_pos_kind = []
+        fit2_bound_kind = []
+        correlation_kind = []
+        for seed in best_fit_lhc1[folder][kind]:
+            fit1_pos_kind.append(seed[0] > 0 and seed[2] > 0 and seed[4] > 0)
+            fit2_bound_kind.append(seed[4] < 10000)
+            correlation_kind.append(not(fit1_pos_kind[-1] ^
+                                        fit2_bound_kind[-1]))
+        fit1_pos_folder[kind] = fit1_pos_kind
+        fit2_bound_folder[kind] = fit2_bound_kind
+        correlation_folder[kind] = correlation_kind
+    fit1_lhc_pos[folder] = fit1_pos_folder
+    fit2_lhc_bound[folder] = fit2_bound_folder
+    correlation[folder] = correlation_folder
+
+#%%
+
 print("general lhc plots.")
 
 for folder in lhc_data:
     for kind in lhc_data[folder]:
         print(folder, kind)
         plot_lhc_fit(best_fit_lhc1[folder][kind], lhc_data[folder][kind],
-                     pass_params_fit1, folder + kind + "f1")
+                     pass_params_fit1, folder + kind + "f1",
+                     fit1_lhc_pos[folder][kind],
+                     fit2_lhc_bound[folder][kind])
         plot_lhc_fit(best_fit_lhc2[folder][kind], lhc_data[folder][kind],
-                     pass_params_fit2_v1, folder + kind + "f2")
+                     pass_params_fit2_v1, folder + kind + "f2",
+                     fit1_lhc_pos[folder][kind],
+                     fit2_lhc_bound[folder][kind])
 
 #%%
 print("lhc best fit distribution")
@@ -1006,7 +1070,9 @@ for label in best_fit_lhc1:
     for kind in best_fit_lhc1[label]:
         best_fit_seed_distrib1(best_fit_lhc1[label][kind], label + kind + "f1")
         lhc_2param_comparison1(best_fit_lhc1[label][kind], label + kind + "f1")
-        lhc_plot_chi_squared1(fit_lhc1[label][kind], label, kind)
+        lhc_plot_chi_squared1(fit_lhc1[label][kind], label, kind,
+                              fit1_lhc_pos[label][kind],
+                              fit2_lhc_bound[label][kind])
         combine_plots_lhc1(label, kind)
 #%%
 
@@ -1014,5 +1080,7 @@ for label in best_fit_lhc2:
     for kind in best_fit_lhc2[label]:
         best_fit_seed_distrib2(best_fit_lhc2[label][kind], label + kind + "f2")
         lhc_2param_comparison2(best_fit_lhc2[label][kind], label + kind + "f2")
-        lhc_plot_chi_squared2(fit_lhc2[label][kind], label, kind)
+        lhc_plot_chi_squared2(fit_lhc2[label][kind], label, kind,
+                              fit1_lhc_pos[label][kind],
+                              fit2_lhc_bound[label][kind])
         combine_plots_lhc2(label, kind)
