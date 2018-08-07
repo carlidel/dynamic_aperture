@@ -99,11 +99,11 @@ std::vector<double> * modulated_radius_scan(double theta, double dx, double epsi
 	
 	for (unsigned int i = 0; i < n_steps; i++)
 	{
-		temp = modulated_particle(i * dx * cos(theta), i * dx * sin(theta), actual_turns, epsilon);
+		temp = modulated_particle(i * dx * cos(theta), i * dx * sin(theta), max_turns, epsilon);
 		if (temp != -1)
-			v->push_back(temp)
+			v->push_back(temp);
 		else
-			v->push_back(actual_turns)
+			v->push_back(max_turns);
 	}
 	
 	return v;
