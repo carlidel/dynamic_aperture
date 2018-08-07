@@ -233,20 +233,20 @@ def pass_params_fit1(x, params):
 ################################################################################
 
 
-def FIT2(x, A, b, k):
-    return b / np.exp(k * np.log(np.log(A * x)))
+def FIT2(x, a, b, k):
+    return b / np.exp(k * np.log(np.log(a * x)))
 
 
-def FIT2_linearized(x, k, B, A): # b = exp(B)
-    return np.exp(B - k * np.log(np.log(A * np.asarray(x))))
+def FIT2_linearized(x, k, B, a): # b = exp(B); a = exp(A)
+    return np.exp(B - k * np.log(np.log(a * np.asarray(x))))
 
 
-def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
+def non_linear_fit2(data, err_data, n_turns, a_min, a_max, da, p0k=0, p0B=0):
     ### Here fit2 is just log(FIT2) and B = log(b)
-    fit2 = lambda x, k, B: B - k * np.log(np.log(A * x))
+    fit2 = lambda x, k, B: B - k * np.log(np.log(a * x))
     chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
                         np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
-    explore_A = {}
+    explore_a = {}
 
     working_data = {}
     working_err_data = {}
@@ -256,28 +256,28 @@ def non_linear_fit2(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
         working_err_data[label] = ((1 / np.copy(data[label])) * 
                                             np.copy(err_data[label]))
 
-    for number in np.arange(A_min, A_max + dA, dA):
-        A = number
+    for number in np.arange(a_min, a_max + da, da):
+        a = number
         try:
             popt, pcov = curve_fit(fit2,
                                    n_turns, [working_data[i] for i in n_turns],
                                    p0=[p0k, p0B],
                                    sigma=[working_err_data[i] for i in n_turns])
-            explore_A[A] = (popt, 
+            explore_a[a] = (popt, 
                             pcov,
                             chi2(n_turns,
                                  [working_data[i] for i in n_turns],
                                  [working_err_data[i] for i in n_turns], 
                                  popt), 
-                            dA)
+                            da)
         except RuntimeError:
-            print("Runtime error with A = {}".format(A))
-    assert len(explore_A) > 0
-    return explore_A
+            print("Runtime error with a = {}".format(a))
+    assert len(explore_a) > 0
+    return explore_a
 
 
-def non_linear_fit2_naive(data, err_data, n_turns, p0k=0, p0B=0, p0A=0):
-    fit2 = lambda x, k, B, A: B - k * np.log(np.log(x*A))
+def non_linear_fit2_naive(data, err_data, n_turns, p0k=0, p0B=0, p0a=0):
+    fit2 = lambda x, k, B, A: B - k * np.log(np.log(x*a))
     working_data = {}
     working_err_data = {}
     # Preprocessing the data
@@ -289,7 +289,7 @@ def non_linear_fit2_naive(data, err_data, n_turns, p0k=0, p0B=0, p0A=0):
         popt, pcov = curve_fit(fit2,
                                n_turns,
                                [working_data[i] for i in n_turns],
-                               p0=[p0k, p0B, p0A],
+                               p0=[p0k, p0B, p0a],
                                sigma=[working_err_data[i] for i in n_turns],
                                bounds=([-np.inf, -np.inf, 0],
                                        [np.inf, np.inf, n_turns[0]]))
@@ -323,15 +323,15 @@ def pass_params_fit2(x, params):
 
 
 def FIT2_v1(x, A, b, k):
-    return b / np.exp(k * np.log((np.log10(x) + A)))
+    return b / np.exp(k * np.log((np.log(x) + A)))
 
 
 def FIT2_linearized_v1(x, k, B, A): # b = exp(B)
-    return np.exp(B - k * np.log(np.log10(np.asarray(x)) + A))
+    return np.exp(B - k * np.log(np.log(np.asarray(x)) + A))
 
 
 def non_linear_fit2_v1(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
-    fit2 = lambda x, k, B: B - k * np.log(np.log10(x) + A)
+    fit2 = lambda x, k, B: B - k * np.log(np.log(x) + A)
     chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
                         np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
     explore_A = {}
@@ -365,7 +365,7 @@ def non_linear_fit2_v1(data, err_data, n_turns, A_min, A_max, dA, p0k=0, p0B=0):
 
 
 def non_linear_fit2_naive_v1(data, err_data, n_turns, p0k=0, p0B=0, p0A=0):
-    fit2 = lambda x, k, B: B - k * np.log(np.log10(x) + A)
+    fit2 = lambda x, k, B: B - k * np.log(np.log(x) + A)
     working_data = {}
     working_err_data = {}
     # Preprocessing the data
@@ -474,7 +474,7 @@ def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
         pass_params_fit2(n_turns, fit_params),
         'g--',
         linewidth=0.5,
-        label='fit: $A={:.2}, b={:.2}, k={:.2}$'.format(
+        label='fit: $a={:.2}, b={:.2}, k={:.2}$'.format(
             fit_params[4], np.exp(fit_params[2]), fit_params[0]))
     plt.xlabel("$N$ turns")
     plt.xscale("log")
@@ -488,7 +488,7 @@ def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
         [], [],
         '',
         linewidth=0,
-        label="$A = {:.2} \pm {:.2}$".format(fit_params[4], fit_params[5]))
+        label="$a = {:.2} \pm {:.2}$".format(fit_params[4], fit_params[5]))
     plt.plot(
         [], [],
         '',
@@ -642,51 +642,51 @@ def fit_parameters_evolution1(fit_parameters, label="plot"):
 
 def fit_parameters_evolution2(fit_parameters, label="plot"):
     theta = []
-    A = []
-    A_err = []
+    a = []
+    a_err = []
     B = []
     B_err = []
     k = []
     k_err = []
     for N in fit_parameters:
         theta_temp = []
-        A_temp = []
+        a_temp = []
         B_temp = []
         k_temp = []
-        A_temp_err = []
+        a_temp_err = []
         B_temp_err = []
         k_temp_err = []
         for angle in fit_parameters[N]:
             theta_temp.append(angle / np.pi)
-            A_temp.append(fit_parameters[N][angle][0])
+            a_temp.append(fit_parameters[N][angle][0])
             B_temp.append(fit_parameters[N][angle][2])
             k_temp.append(fit_parameters[N][angle][4])
-            A_temp_err.append(fit_parameters[N][angle][1])
+            a_temp_err.append(fit_parameters[N][angle][1])
             B_temp_err.append(fit_parameters[N][angle][3])
             k_temp_err.append(k_error)
         theta.append(theta_temp)
-        A.append(A_temp)
+        a.append(a_temp)
         B.append(B_temp)
         k.append(k_temp)
-        A_err.append(A_temp_err)
+        a_err.append(a_temp_err)
         B_err.append(B_temp_err)
         k_err.append(k_temp_err)
-    # print(A)
+    # print(a)
     # print(B)
-    for i in range(len(A)):
+    for i in range(len(a)):
         plt.errorbar(
             theta[i],
-            A[i],
-            yerr=A_err[i],
-            xerr=(0.25 / len(A[i])),
+            a[i],
+            yerr=a_err[i],
+            xerr=(0.25 / len(a[i])),
             linewidth=0,
             elinewidth=1)
         plt.xlabel("Theta $(rad / \pi)$")
-        plt.ylabel("Fit value " + "A " + " (A.U.)")
-        plt.title("fit2, " + label + ", " + "A " + "parameter")
+        plt.ylabel("Fit value " + "a " + " (A.U.)")
+        plt.title("fit2, " + label + ", " + "a " + "parameter")
         plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
         plt.tight_layout()
-    plt.savefig("img/fit/" + "fit2" + label + "_A.png", dpi=DPI)
+    plt.savefig("img/fit/" + "fit2" + label + "_a.png", dpi=DPI)
     plt.clf()
     for i in range(len(B)):
         plt.errorbar(
@@ -833,7 +833,7 @@ def plot_chi_squared2(fit_params,
         marker="o",
         markersize=0.5,
         linewidth=0.5)
-    plt.xlabel("A value")
+    plt.xlabel("a value")
     #plt.xscale("log")
     plt.ylabel("Chi-Squared value")
     plt.title(
@@ -970,7 +970,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
     plt.savefig("img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
-    ## A
+    ## a
     plt.errorbar(
         [x[2] for x in sorted(fit_params_dict)],
         [fit_params_dict[x][n_partitions][angle][4] 
@@ -983,14 +983,55 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.yscale("log")
-    plt.ylabel("$A$ value")
-    plt.title("FIT2 $A$ parameter evolution over $\epsilon$\n"+
+    plt.ylabel("$a$ value")
+    plt.title("FIT2 $a$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
-    plt.savefig("img/fit/f2param_eps_A_N{}_ang{:2.2f}.png".
+    plt.savefig("img/fit/f2param_eps_a_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
 
+
+def fit_params_over_epsilon_2and2v1(fit_params_dict1, fit_params_dict2,
+                                    n_partitions=1, angle=np.pi / 4):
+    # a from fit2
+    plt.errorbar(
+        [x[2] for x in sorted(fit_params_dict1)],
+        [fit_params_dict1[x][n_partitions][angle][4] 
+            for x in sorted(fit_params_dict1)],
+        yerr=[fit_params_dict1[x][n_partitions][angle][5] 
+            for x in sorted(fit_params_dict1)],
+        linewidth=0,
+        elinewidth=0.5,
+        marker="x",
+        markersize=4,
+        label="$\log(a*N)^k$")
+    # A from fit2v1
+    plt.errorbar(
+        [x[2] for x in sorted(fit_params_dict2)],
+        [np.exp(fit_params_dict2[x][n_partitions][angle][4]) 
+            for x in sorted(fit_params_dict2)],
+        yerr=[np.exp(fit_params_dict2[x][n_partitions][angle][4]) * 
+            fit_params_dict2[x][n_partitions][angle][5] 
+            for x in sorted(fit_params_dict2)],
+        linewidth=0,
+        elinewidth=0.5,
+        marker="x",
+        markersize=2,
+        label="$(\log(N) + \log(a))^k$")
+    print([np.exp(fit_params_dict2[x][n_partitions][angle][4]) 
+            for x in sorted(fit_params_dict2)])
+    plt.xlabel("$\epsilon$")
+    plt.ylabel("$a$ value")
+    plt.yscale("log")
+    plt.title("FIT2 and FIT2v1 $a$ parameter evolution over $\epsilon$\n"+
+              "N partitions $= {}$, central angle $= {:.3f}$".
+              format(n_partitions, angle))
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("img/fit/f2f2v1param_eps_a_N{}_ang{:2.2f}.png".
+                format(n_partitions, angle), dpi=DPI)
+    plt.clf()
 
 ################################################################################
 ################################################################################
@@ -1124,62 +1165,6 @@ def plot_losses(title, filename,
     plt.savefig(filename, dpi=DPI)  
     plt.clf()
 
-
-def plot_4_different_fits(params1,
-                          params2,
-                          params3,
-                          params4,
-                          func1,
-                          func2,
-                          sigma,
-                          epsilon,
-                          n_turns=n_turns):
-    plt.plot(
-        n_turns,
-        func1(n_turns, params1[0], params1[2], params1[4]),
-        linewidth=0.5,
-        label=
-        'fit1 from D: $D_\infty={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
-        format(params1[0], params1[1], params1[2], params1[3], params1[4],
-               k_error))
-    plt.plot(
-        n_turns,
-        func1(n_turns, params2[0], params2[2], params2[4]),
-        linewidth=0.5,
-        label=
-        'fit1 Precise: $D_\infty={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
-        format(params2[0], params2[1], params2[2], params2[3], params2[4],
-               k_error))
-    plt.plot(
-        n_turns,
-        func2(n_turns, params3[0], params3[2], params3[4]),
-        linewidth=0.5,
-        label=
-        'fit2 from D: $A={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
-        format(params3[0], params3[1], params3[2], params3[3], params3[4],
-               k_error))
-    plt.plot(
-        n_turns,
-        func2(n_turns, params4[0], params4[2], params4[4]),
-        linewidth=0.5,
-        label=
-        'fit2 Precise: $A={:4.2f}\pm{:.2f}, B={:4.2f}\pm{:.2f}, k={:4.2f}\pm{:.2f}$'.
-        format(params4[0], params4[1], params4[2], params4[3], params4[4],
-               k_error))
-    plt.legend(prop={"size": 6})
-    plt.grid(True)
-    plt.xlabel("N Turns")
-    plt.xscale("log")
-    plt.ylabel("D (A.U.)")
-    plt.title("Fit Comparison, $\sigma = {:2.2f}, \epsilon = {:2.2f}$.".format(
-        sigma, epsilon[2]))
-    plt.tight_layout()
-    plt.savefig(
-        "img/loss/comparison_loss_precise_sigma{:2.2f}_eps{:2.2f}.png".format(
-            sigma, epsilon[2]),
-        dpi=DPI)
-    plt.clf()
-
 ################################################################################
 ################################################################################
 ################################################################################
@@ -1207,9 +1192,9 @@ def sigma_filler(data_dict, perc):
 
 def lambda_color(fit1_selected, fit2_decent):
     if not (fit1_selected ^ fit2_decent):
-        return "g-"
-    elif (fit1_selected and not fit2_decent):
         return "y--"
+    elif (fit1_selected and not fit2_decent):
+        return "g-"
     elif (fit2_decent and not fit1_selected):
         return "r-"
 
@@ -1265,6 +1250,7 @@ def best_fit_seed_distrib1(params, label="plot"):
         markersize=1)
     plt.xlabel("Seed number")
     plt.ylabel("B parameter")
+    plt.yscale("symlog")
     plt.title(label + ", B parameter")
     plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
     plt.tight_layout()
@@ -1296,11 +1282,12 @@ def best_fit_seed_distrib2(params, label="plot"):
         marker="o",
         markersize=1)
     plt.xlabel("Seed number")
-    plt.ylabel("$A$" + " parameter")
-    plt.title(label + ", " + "$A$" + " parameter")
+    plt.ylabel("$a$" + " parameter")
+    plt.yscale("symlog")
+    plt.title(label + ", " + "$a$" + " parameter")
     plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
     plt.tight_layout()
-    plt.savefig("img/lhc/lhc_" + label + "_A.png", dpi=DPI)
+    plt.savefig("img/lhc/lhc_" + label + "_a.png", dpi=DPI)
     plt.clf()
 
     plt.errorbar(
@@ -1375,10 +1362,11 @@ def lhc_2param_comparison2(params, label="plot"):
         linewidth=0,
         marker="o",
         markersize=1)
-    plt.xlabel("$A$")
+    plt.xlabel("$a$")
+    plt.xscale("symlog")
     plt.ylabel("$b$")
     plt.tight_layout()
-    plt.savefig("img/lhc/lhc_" + label + "_AB.png", dpi=DPI)
+    plt.savefig("img/lhc/lhc_" + label + "_aB.png", dpi=DPI)
     plt.clf()
 
     plt.plot(
@@ -1386,10 +1374,11 @@ def lhc_2param_comparison2(params, label="plot"):
         linewidth=0,
         marker="o",
         markersize=1)
-    plt.xlabel("$A$")
+    plt.xlabel("$a$")
+    plt.xscale("symlog")
     plt.ylabel("$k$")
     plt.tight_layout()
-    plt.savefig("img/lhc/lhc_" + label + "_Ak.png", dpi=DPI)
+    plt.savefig("img/lhc/lhc_" + label + "_ak.png", dpi=DPI)
     plt.clf()
 
     plt.plot(
@@ -1432,7 +1421,7 @@ def lhc_plot_chi_squared2(data, folder, kind, fit1_p, fit2_b):
                  marker='o',
                  markersize=0.0)
         j += 1
-    plt.xlabel("A value")
+    plt.xlabel("a value")
     plt.xscale("log")
     plt.ylabel("Chi-Squared value")
     plt.title("Behaviour of Chi-Squared function in non linear fit part")
@@ -1457,16 +1446,17 @@ def combine_plots_lhc1(folder, kind):
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
-    cv2.imwrite("img/lhc/lhc_bigpicture_" + folder + kind + "f1" + ".png", image)
+    cv2.imwrite("img/lhc/lhc_bigpicture_" + folder + kind + "f1" + ".png",
+                image)
 
 
 def combine_plots_lhc2(folder, kind):
     img1 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_all.png")
-    img2 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_A.png")
+    img2 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_a.png")
     img3 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_B.png")
     img4 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_k.png")
-    img5 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_AB.png")
-    img6 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_Ak.png")
+    img5 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_aB.png")
+    img6 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_ak.png")
     img7 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_Bk.png")
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
@@ -1480,7 +1470,7 @@ def combine_plots_lhc2(folder, kind):
 
 def combine_plots_lhc3(folder, kind):
     img1 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_all.png")
-    img2 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_A.png")
+    img2 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_a.png")
     img3 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_B.png")
     img4 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_k.png")
     img5 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_Dinf.png")
@@ -1493,7 +1483,8 @@ def combine_plots_lhc3(folder, kind):
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
-    cv2.imwrite("img/lhc/lhc_bigpicture_" + "both" + folder + kind + ".png", image)
+    cv2.imwrite("img/lhc/lhc_bigpicture_" + "both" + folder + kind + ".png",
+                image)
 
 
 ################################################################################
@@ -1516,4 +1507,24 @@ def combine_image_3x2(imgname, path1, path2="none", path3="none", path4="none",
     row1 = np.concatenate((img1, img2, img3), axis=1)
     row2 = np.concatenate((img4, img5, img6), axis=1)
     image = np.concatenate((row1, row2), axis=0)
+    cv2.imwrite(imgname, image)
+
+
+def combine_image_3x3(imgname, path1, path2="none", path3="none", path4="none",
+                      path5="none", path6="none", path7="none", path8="none",
+                      path9="none"):
+    img1 = cv2.imread(path1)
+    filler = np.zeros(img1.shape)
+    img2 = cv2.imread(path2) if path2 is not "none" else filler
+    img3 = cv2.imread(path3) if path3 is not "none" else filler
+    img4 = cv2.imread(path4) if path4 is not "none" else filler
+    img5 = cv2.imread(path5) if path5 is not "none" else filler
+    img6 = cv2.imread(path6) if path6 is not "none" else filler
+    img7 = cv2.imread(path7) if path7 is not "none" else filler
+    img8 = cv2.imread(path8) if path8 is not "none" else filler
+    img9 = cv2.imread(path9) if path9 is not "none" else filler
+    row1 = np.concatenate((img1, img2, img3), axis=1)
+    row2 = np.concatenate((img4, img5, img6), axis=1)
+    row3 = np.concatenate((img7, img8, img9), axis=1)
+    image = np.concatenate((row1, row2, row3), axis=0)
     cv2.imwrite(imgname, image)
