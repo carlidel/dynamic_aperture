@@ -964,9 +964,9 @@ for folder in best_fit_lhc1:
         fit1_pos_kind = []
         fit2_bound_kind = []
         for seed in best_fit_lhc1[folder][kind]:
-            fit1_pos_kind.append(seed[4] > 0)
+            fit1_pos_kind.append(seed[4] > 0 and seed[0] > 0 and seed[2] > 0)
         for seed in best_fit_lhc2[folder][kind]:
-            fit2_bound_kind.append(seed[4] < 1e+5)
+            fit2_bound_kind.append(seed[4] < 1e+10)
         fit1_pos_folder[kind] = fit1_pos_kind
         fit2_bound_folder[kind] = fit2_bound_kind
     fit1_lhc_pos[folder] = fit1_pos_folder

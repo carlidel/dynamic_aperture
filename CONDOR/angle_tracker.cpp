@@ -91,28 +91,21 @@ int modulated_particle(double x0, double y0, unsigned int T, double epsilon)
 	return -1;
 }
 
-std::vector<double> * modulated_radius_scan(double theta, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int min_turns = 1000)
+std::vector<double> * modulated_radius_scan(double theta, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int n_steps = 1000)
 {
 	std::vector<double> * v = new std::vector<double>();
 	
-	unsigned int actual_turns = max_turns;
 	int temp;
-	int i = -1;
 	
-	while(actual_turns >= min_turns)
+	for (unsigned int i = 0; i < n_steps; i++)
 	{
-		i++;
 		temp = modulated_particle(i * dx * cos(theta), i * dx * sin(theta), actual_turns, epsilon);
 		if (temp != -1)
-		{
-			actual_turns = temp;
-			v->push_back(actual_turns);
-		}
+			v->push_back(temp)
 		else
-		{
-			v->push_back(actual_turns);
-		}
+			v->push_back(actual_turns)
 	}
+	
 	return v;
 }
 
@@ -179,7 +172,7 @@ int main(int argc, const char * argv[])
 	{
 		//std::cout << "Scanning angle: " << angle << "/" << M_PI / 4 << std::endl;
 		std::cout << angle << " ";
-		std::vector<double> * v = modulated_radius_scan(angle, dx, epsilon, max_turns);
+		std::vector<double> * v = modulated_radius_scan(angle, dx, epsilon, max_turns, 1 / dx);
 		for (unsigned int i = 0; i < v->size(); ++i)
 		{
 			std::cout << v->at(i) << " ";

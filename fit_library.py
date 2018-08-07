@@ -982,6 +982,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
         marker="x",
         markersize=1)
     plt.xlabel("$\epsilon$")
+    plt.yscale("log")
     plt.ylabel("$A$ value")
     plt.title("FIT2 $A$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
@@ -1207,8 +1208,10 @@ def sigma_filler(data_dict, perc):
 def lambda_color(fit1_selected, fit2_decent):
     if not (fit1_selected ^ fit2_decent):
         return "g-"
-    else:
-        return "r--"
+    elif (fit1_selected and not fit2_decent):
+        return "y--"
+    elif (fit2_decent and not fit1_selected):
+        return "r-"
 
 
 def plot_lhc_fit(best_fit, data, func, label, fit1_p, fit2_b):
