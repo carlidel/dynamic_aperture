@@ -1204,6 +1204,13 @@ def sigma_filler(data_dict, perc):
     return sigma_dict
 
 
+def lambda_color(fit1_selected, fit2_decent):
+    if not (fit1_selected ^ fit2_decent):
+        return "g-"
+    else:
+        return "r--"
+
+
 def plot_lhc_fit(best_fit, data, func, label, fit1_p, fit2_b):
     j = 0
     for i in range(len(data)):
@@ -1217,7 +1224,7 @@ def plot_lhc_fit(best_fit, data, func, label, fit1_p, fit2_b):
         plt.plot(
             sorted(data[i]),
             func(sorted(data[i]), best_fit[i]),
-            ('g' if fit1_p[j] else 'r') + ('--' if fit2_b[j] else ''),
+            lambda_color(fit1_p[j], fit2_b[j]),
             linewidth=0.5,
             label='fit {}'.format(i))
         j += 1
@@ -1399,7 +1406,7 @@ def lhc_plot_chi_squared1(data, folder, kind, fit1_p, fit2_b):
     for seed in data:
         plt.plot(sorted(seed), 
                  [seed[x][2] for x in sorted(seed)],
-                 ('g' if fit1_p[j] else 'r') + ('--' if fit2_b[j] else ''),
+                 lambda_color(fit1_p[j], fit2_b[j]),
                  linewidth=0.3,
                  marker='o',
                  markersize=0.0)
@@ -1417,7 +1424,7 @@ def lhc_plot_chi_squared2(data, folder, kind, fit1_p, fit2_b):
     for seed in data:
         plt.plot(sorted(seed), 
                  [seed[x][2] for x in sorted(seed)],
-                 ('g' if fit1_p[j] else 'r') + ('--' if fit2_b[j] else ''),
+                 lambda_color(fit1_p[j], fit2_b[j]),
                  linewidth=0.3,
                  marker='o',
                  markersize=0.0)
@@ -1468,6 +1475,24 @@ def combine_plots_lhc2(folder, kind):
     cv2.imwrite("img/lhc/lhc_bigpicture_" + "f2" + folder + kind + ".png", image)
 
 
+def combine_plots_lhc3(folder, kind):
+    img1 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_all.png")
+    img2 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_A.png")
+    img3 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_B.png")
+    img4 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_k.png")
+    img5 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_Dinf.png")
+    img6 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_B.png")
+    img7 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_k.png")
+    img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
+    img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
+    filler = np.zeros(img1.shape)
+    row1 = np.concatenate((img9, img1, img8), axis=1)
+    row2 = np.concatenate((img2, img3, img4), axis=1)
+    row3 = np.concatenate((img5, img6, img7), axis=1)
+    image = np.concatenate((row1, row2, row3), axis=0)
+    cv2.imwrite("img/lhc/lhc_bigpicture_" + "both" + folder + kind + ".png", image)
+
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -1476,9 +1501,8 @@ def combine_plots_lhc2(folder, kind):
 ################################################################################
 ################################################################################
 
-def combine_image_3x3(imgname, path1, path2="none", path3="none", path4="none",
-                      path5="none", path6="none", path7="none", path8="none",
-                      path9="none"):
+def combine_image_3x2(imgname, path1, path2="none", path3="none", path4="none",
+                      path5="none", path6="none"):
     img1 = cv2.imread(path1)
     filler = np.zeros(img1.shape)
     img2 = cv2.imread(path2) if path2 is not "none" else filler
@@ -1486,12 +1510,7 @@ def combine_image_3x3(imgname, path1, path2="none", path3="none", path4="none",
     img4 = cv2.imread(path4) if path4 is not "none" else filler
     img5 = cv2.imread(path5) if path5 is not "none" else filler
     img6 = cv2.imread(path6) if path6 is not "none" else filler
-    img7 = cv2.imread(path7) if path7 is not "none" else filler
-    img8 = cv2.imread(path8) if path8 is not "none" else filler
-    img9 = cv2.imread(path9) if path9 is not "none" else filler
     row1 = np.concatenate((img1, img2, img3), axis=1)
     row2 = np.concatenate((img4, img5, img6), axis=1)
-    row3 = np.concatenate((img7, img8, img9), axis=1)
-    image = np.concatenate((row1, row2, row3), axis=0)
+    image = np.concatenate((row1, row2), axis=0)
     cv2.imwrite(imgname, image)
-    

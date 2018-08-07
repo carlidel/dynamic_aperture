@@ -27,7 +27,7 @@ dx = 0.01
 #%%
 print("load data")
 
-data = pickle.load(open("radscan_dx01_firstonly_manyepsilons_dictionary.pkl", "rb"))
+data = pickle.load(open("radscan_dx01_firstonly_manyepsilons_dictionary_v2.pkl", "rb"))
 lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 
 # temporary removal of high epsilons for performance:
@@ -279,7 +279,7 @@ for N in best_fit_parameters2[temp]:
 
 #%%
 print("compose fit over epsilon.")
-combine_image_3x3("img/fit/params_over_epsilon.png",
+combine_image_3x2("img/fit/params_over_epsilon.png",
                   "img/fit/f1param_eps_D_N1_ang0.79.png",
                   "img/fit/f1param_eps_b_N1_ang0.79.png",
                   "img/fit/f1param_eps_k_N1_ang0.79.png",
@@ -717,6 +717,35 @@ for sigma in sigmas:
                 ["D loss FIT2, N $= {}$".format(N)
                 for N in loss_D_fit2[sigma][epsilon]])
 
+        ### Anglescan Fit and D Fits
+        plot_losses(
+            ("Comparison of loss measures (angscan, angscan fits, D fits),\n" +
+                "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
+                        format(sigma, epsilon[2])),
+            ("img/loss/loss_anglescan_and_allfits_sig{:2.2f}_eps{:2.0f}.png".
+                        format(sigma, epsilon[2])),
+            n_turns,
+            [loss_anglescan[sigma][epsilon]],
+            ["Anglescan loss"],
+            [loss_D_fit1[sigma][epsilon][N] 
+                for N in loss_D_fit1[sigma][epsilon]] + 
+                [loss_D_fit2[sigma][epsilon][N] 
+                for N in loss_D_fit2[sigma][epsilon]] +
+                [loss_anglescan_fit1[sigma][epsilon],
+                loss_anglescan_fit2[sigma][epsilon]],
+            [loss_D_fit1_err[sigma][epsilon][N] 
+                for N in loss_D_fit1_err[sigma][epsilon]] + 
+                [loss_D_fit2_err[sigma][epsilon][N] 
+                for N in loss_D_fit2_err[sigma][epsilon]] +
+                [loss_anglescan_fit1_err[sigma][epsilon],
+                loss_anglescan_fit2_err[sigma][epsilon]],
+            ["D loss FIT1, N $= {}$".format(N)
+                for N in loss_D_fit1[sigma][epsilon]] +
+                ["D loss FIT2, N $= {}$".format(N)
+                for N in loss_D_fit2[sigma][epsilon]] +
+                ["D loss anglescan FIT1", "D loss anglescan FIT2"])
+            
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -810,11 +839,11 @@ for label in lhc_data:
                                 select_best_fit2(fit_lhc2_correction[-1]))
             ### Is this a naive minimum in the chi squared?
             while (best_fit_lhc2_correction[-1][4] >= (A_max * scale_search 
-                    - dA * scale_search) and scale_search <= 1e10):
+                    - dA * scale_search) and scale_search <= 1e20):
                 print("Minimum naive! Increase scale_search!")
                 A_min_new = A_max * scale_search
                 scale_search *= 10.
-                if scale_search > 1e10:
+                if scale_search > 1e20:
                     print("Maximum scale reached! This will be the last fit.")
                 print(scale_search)
                 fit_lhc2_correction[-1] = non_linear_fit2(
@@ -866,11 +895,11 @@ for label in lhc_data:
                                 select_best_fit2(fit_lhc2_correction[-1]))
             ### Is this a naive minimum in the chi squared?
             while (best_fit_lhc2_correction[-1][4] >= (A_max * scale_search 
-                    - dA * scale_search + shift) and scale_search <= 1e10):
+                    - dA * scale_search + shift) and scale_search <= 1e20):
                 print("Minimum naive! Increase scale_search!")
                 A_min_new = A_max * scale_search
                 scale_search *= 10.
-                if scale_search > 1e10:
+                if scale_search > 1e20:
                     print("Maximum scale reached! This will be the last fit.")
                 print(scale_search)
                 fit_lhc2_correction[-1] = non_linear_fit2_v1(
@@ -928,27 +957,21 @@ best_fit_lhc2 = fit_lhc[3]
 print("Is fit1 positive? Is fit2 bounded in A?")
 fit1_lhc_pos = {}
 fit2_lhc_bound = {}
-correlation = {}
 for folder in best_fit_lhc1:
     fit1_pos_folder = {}
     fit2_bound_folder = {}
-    correlation_folder = {}
     for kind in best_fit_lhc1[folder]:
         fit1_pos_kind = []
         fit2_bound_kind = []
-        correlation_kind = []
         for seed in best_fit_lhc1[folder][kind]:
-            fit1_pos_kind.append(seed[0] > 0 and seed[2] > 0 and seed[4] > 0)
-            fit2_bound_kind.append(seed[4] < 10000)
-            correlation_kind.append(not(fit1_pos_kind[-1] ^
-                                        fit2_bound_kind[-1]))
+            fit1_pos_kind.append(seed[4] > 0)
+        for seed in best_fit_lhc2[folder][kind]:
+            fit2_bound_kind.append(seed[4] < 1e+5)
         fit1_pos_folder[kind] = fit1_pos_kind
         fit2_bound_folder[kind] = fit2_bound_kind
-        correlation_folder[kind] = correlation_kind
     fit1_lhc_pos[folder] = fit1_pos_folder
     fit2_lhc_bound[folder] = fit2_bound_folder
-    correlation[folder] = correlation_folder
-
+    
 #%%
 
 print("general lhc plots.")
@@ -961,7 +984,7 @@ for folder in lhc_data:
                      fit1_lhc_pos[folder][kind],
                      fit2_lhc_bound[folder][kind])
         plot_lhc_fit(best_fit_lhc2[folder][kind], lhc_data[folder][kind],
-                     pass_params_fit2_v1, folder + kind + "f2",
+                     pass_params_fit2, folder + kind + "f2",
                      fit1_lhc_pos[folder][kind],
                      fit2_lhc_bound[folder][kind])
 
@@ -975,7 +998,6 @@ for label in best_fit_lhc1:
         lhc_plot_chi_squared1(fit_lhc1[label][kind], label, kind,
                               fit1_lhc_pos[label][kind],
                               fit2_lhc_bound[label][kind])
-        combine_plots_lhc1(label, kind)
 #%%
 
 for label in best_fit_lhc2:
@@ -985,4 +1007,10 @@ for label in best_fit_lhc2:
         lhc_plot_chi_squared2(fit_lhc2[label][kind], label, kind,
                               fit1_lhc_pos[label][kind],
                               fit2_lhc_bound[label][kind])
+
+#%%
+for label in best_fit_lhc2:
+    for kind in best_fit_lhc2[label]:
+        combine_plots_lhc1(label, kind)
         combine_plots_lhc2(label, kind)
+        combine_plots_lhc3(label, kind)

@@ -1,8 +1,8 @@
 import pickle
 import os
 
-file1 = "radscan_dx01_firstonly_dictionary_second.pkl"
-file2 = "radscan_dx01_firstonly_dictionary.pkl"
+file1 = "radscan_dx01_firstonly_dictionary_third.pkl"
+file2 = "radscan_dx01_firstonly_manyepsilons_dictionary.pkl"
 
 data1 = pickle.load(open(file1, "rb"))
 data2 = pickle.load(open(file2, "rb"))
@@ -15,5 +15,5 @@ for element in data1:
 for element in data2:
 	dictionary[element] = data2[element]
 
-with open("radscan_dx01_firstonly_manyepsilons_dictionary.pkl", "wb") as f:
+with open("radscan_dx01_firstonly_manyepsilons_dictionary_v2.pkl", "wb") as f:
 	pickle.dump(dictionary, f, pickle.HIGHEST_PROTOCOL)
