@@ -2,11 +2,10 @@ import cv2
 import os
 
 def png_to_jpg(pathname):
-	names = os.listdir(pathname)
-	if not os.path.exists(pathname + "JPEG"):
-		os.makedirs(pathname + "JPEG")
-	for image in names:
-		if ".png" in image:
-			img = cv2.imread(pathname + image)
-			cv2.imwrite(pathname + "JPEG/" + image[:-3] + 'jpg', img)
-			print("Converted: " + image)
+	for root, dirs, files in os.walk(pathname):
+		for name in files:
+			if ".png" in name:
+				img = cv2.imread(os.path.join(root, name))
+				print(root, name)
+				cv2.imwrite("JPEG/" + root[4:] + "/" + name[:-3] + 'jpg', img)
+				print("Converted: " + name)
