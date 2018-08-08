@@ -16,7 +16,7 @@ from fit_library import *
 # Search parameters
 k_max = 7.
 k_min = -10.
-dk = 0.1
+dk = 0.02
 
 dA = 0.0001
 A_max = 0.01
@@ -113,11 +113,11 @@ for epsilon in dynamic_aperture:
             best[angle] = select_best_fit2(fit[angle])
             ### Is this a naive minimum in the chi squared?
             while (best[angle][4] >= A_max * scale_search - dA * scale_search
-                   and scale_search <= 1e50):
+                   and scale_search <= 1e30):
                 print("Minimum naive! Increase scale_search!")
                 A_min_new = A_max * scale_search
                 scale_search *= 10.
-                if scale_search > 1e50:
+                if scale_search > 1e30:
                     print("Maximum scale reached! This will be the last fit.")
                 print(scale_search)
                 fit[angle] = non_linear_fit2(
@@ -137,9 +137,9 @@ for epsilon in dynamic_aperture:
 #%%
 
 dA = 0.001
-A_max = 5.
+A_max = 0.1
 A_min = 0.00
-shift = - np.log10(n_turns[0]) + dA
+shift = - np.log(n_turns[0]) + dA
     
 
 print("Fit on Partitions2v1")
@@ -169,11 +169,11 @@ for epsilon in dynamic_aperture:
             best[angle] = select_best_fit2_v1(fit[angle])
             ### Is this a naive minimum in the chi squared?
             while (best[angle][4] >= A_max * scale_search - dA * scale_search +
-                   shift and scale_search <= 1e50):
+                   shift and scale_search <= 1e30):
                 print("Minimum naive! Increase scale_search!")
                 A_min_new = A_max * scale_search
                 scale_search *= 10.
-                if scale_search > 1e50:
+                if scale_search > 1e30:
                     print("Maximum scale reached! This will be the last fit.")
                 print(scale_search)
                 fit[angle] = non_linear_fit2_v1(
@@ -287,6 +287,14 @@ combine_image_3x2("img/fit/params_over_epsilon.png",
                   "img/fit/f2param_eps_B_N1_ang0.79.png",
                   "img/fit/f2param_eps_k_N1_ang0.79.png")
 
+#%%
+print("test numerical accuracy")
+temp = list(best_fit_parameters2.keys())[0]
+for N in best_fit_parameters2[temp]:
+    for angle in (best_fit_parameters2[temp][N]):
+        fit_params_over_epsilon_2and2v1(best_fit_parameters2,
+                                        best_fit_parameters2_v1,
+                                        N, angle)
 
 ################################################################################
 ################################################################################
@@ -765,7 +773,7 @@ from fit_library import *
 # Search parameters
 k_max = 7.
 k_min = -10.
-dk = 0.1
+dk = 0.02
 
 dA = 0.0001
 A_max = 0.01
@@ -954,7 +962,7 @@ best_fit_lhc1 = fit_lhc[2]
 best_fit_lhc2 = fit_lhc[3]
 
 #%%
-print("Is fit1 positive? Is fit2 bounded in A?")
+print("Is fit1 positive? Is fit2 bounded in a?")
 fit1_lhc_pos = {}
 fit2_lhc_bound = {}
 for folder in best_fit_lhc1:
@@ -971,6 +979,17 @@ for folder in best_fit_lhc1:
         fit2_bound_folder[kind] = fit2_bound_kind
     fit1_lhc_pos[folder] = fit1_pos_folder
     fit2_lhc_bound[folder] = fit2_bound_folder
+
+## Is fit2 equal or better fit1?
+flag = True
+for folder in fit1_lhc_pos:
+    for kind in fit1_lhc_pos[folder]:
+        for i in range(len(fit1_lhc_pos[folder][kind])):
+            if (fit1_lhc_pos[folder][kind][i] and
+                    not fit2_lhc_bound[folder][kind][i]):
+                print("DID NOT WORK FOR {}-{}".format(folder, kind))
+                flag = False
+print(flag)
     
 #%%
 
@@ -989,19 +1008,22 @@ for folder in lhc_data:
                      fit2_lhc_bound[folder][kind])
 
 #%%
-print("lhc best fit distribution")
+print("lhc best fit distribution1")
 
 for label in best_fit_lhc1:
     for kind in best_fit_lhc1[label]:
+        print(label, kind)
         best_fit_seed_distrib1(best_fit_lhc1[label][kind], label + kind + "f1")
         lhc_2param_comparison1(best_fit_lhc1[label][kind], label + kind + "f1")
         lhc_plot_chi_squared1(fit_lhc1[label][kind], label, kind,
                               fit1_lhc_pos[label][kind],
                               fit2_lhc_bound[label][kind])
 #%%
+print("lhc best fit distribution2")
 
 for label in best_fit_lhc2:
     for kind in best_fit_lhc2[label]:
+        print(label, kind)
         best_fit_seed_distrib2(best_fit_lhc2[label][kind], label + kind + "f2")
         lhc_2param_comparison2(best_fit_lhc2[label][kind], label + kind + "f2")
         lhc_plot_chi_squared2(fit_lhc2[label][kind], label, kind,
