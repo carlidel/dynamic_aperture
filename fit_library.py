@@ -999,8 +999,8 @@ def fit_params_over_epsilon_2and2v1(fit_params_dict1, fit_params_dict2,
         [x[2] for x in sorted(fit_params_dict1)],
         [fit_params_dict1[x][n_partitions][angle][4] 
             for x in sorted(fit_params_dict1)],
-        yerr=[fit_params_dict1[x][n_partitions][angle][5] 
-            for x in sorted(fit_params_dict1)],
+        # yerr=[fit_params_dict1[x][n_partitions][angle][5] 
+        #     for x in sorted(fit_params_dict1)],
         linewidth=0,
         elinewidth=0.5,
         marker="x",
@@ -1011,9 +1011,9 @@ def fit_params_over_epsilon_2and2v1(fit_params_dict1, fit_params_dict2,
         [x[2] for x in sorted(fit_params_dict2)],
         [np.exp(fit_params_dict2[x][n_partitions][angle][4]) 
             for x in sorted(fit_params_dict2)],
-        yerr=[np.exp(fit_params_dict2[x][n_partitions][angle][4]) * 
-            fit_params_dict2[x][n_partitions][angle][5] 
-            for x in sorted(fit_params_dict2)],
+        # yerr=[np.exp(fit_params_dict2[x][n_partitions][angle][4]) * 
+        #     fit_params_dict2[x][n_partitions][angle][5] 
+        #     for x in sorted(fit_params_dict2)],
         linewidth=0,
         elinewidth=0.5,
         marker="x",
@@ -1070,9 +1070,18 @@ def loss_from_anglescan(contour, time, sigma=1):
         dx=dtheta)
 
 
-def grid_intensity(grid, dx=dx):
-    # TODO :: IMPROVE?
-    return integrate.trapz(integrate.trapz(grid, dx=dx), dx=dx)
+def radscan_intensity(grid, dx=dx):
+    # int_theta(int_radius(element * x * dx) * dtheta)
+    processed = {}
+    for angle in grid:
+        temp = [dx * i * grid[angle][i] for i in range(len(grid[angle]))]
+        processed[angle] = temp
+    lines = {}
+    for angle in grid:
+        #print(processed[angle])
+        lines[angle] = integrate.trapz(processed[angle], dx=dx)
+    return integrate.trapz([lines[angle] for angle in list(sorted(processed))],
+            x=[angle for angle in list(sorted(lines))])
 
 
 def single_partition_intensity(best_fit_params, pass_par_func, time, sigma):

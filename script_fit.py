@@ -11,19 +11,6 @@ from fit_library import *
 ################################################################################
 ################################################################################
 ################################################################################
-
-#%%
-# Search parameters
-k_max = 7.
-k_min = -10.
-dk = 0.02
-
-dA = 0.0001
-A_max = 0.01
-A_min = 0.001 + dA ### under this value it is just wrong
-
-dx = 0.01
-
 #%%
 print("load data")
 
@@ -39,6 +26,7 @@ lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
 #    i += 1
 # end temporary
 
+dx = 0.01
 #%%
 contour_data = {}
 for epsilon in data:
@@ -56,6 +44,11 @@ for epsilon in sorted(data):
 
 #%%
 print("Fit on Partitions1")
+
+# Search parameters
+k_max = 7.
+k_min = -10.
+dk = 0.02
 
 fit_parameters1 = {}
 best_fit_parameters1 = {}
@@ -308,8 +301,16 @@ for N in best_fit_parameters2[temp]:
 print("Is this loss?")
 
 # Weights at beginning
-
 sigmas = [0.2, 0.25, 0.5, 0.75, 1]
+
+# Search parameters
+k_max = 7.
+k_min = -10.
+dk = 0.02
+
+dA = 0.0001
+A_max = 0.01
+A_min = 0.001 ### under this value it doesn't converge
 
 loss_precise = {}
 loss_anglescan = {}
@@ -320,15 +321,16 @@ loss_D_fit2_err = {}
 
 for sigma in sigmas:
     print(sigma)
-    weights = np.array([[
-            intensity_zero_gaussian(x * dx, y * dx, sigma, sigma)
-            for x in range(80)
-        ] for y in range(80)])
-    I0 = grid_intensity(
-        np.array([[
-            intensity_zero_gaussian(x * dx, y * dx, sigma, sigma)
-            for x in range(1000)
-        ] for y in range(1000)]))
+
+    temp = list(data.keys())[0]
+    weights = {}
+    I0 = {}
+    for angle in data[temp]:
+        weights[angle] = [intensity_zero_gaussian(i * dx * np.cos(angle),
+            i * dx * np.sin(angle), sigma, sigma) for i in range(100)]
+        I0[angle] =  [intensity_zero_gaussian(i * dx * np.cos(angle),
+            i * dx * np.sin(angle), sigma, sigma) for i in range(1000)]
+    I0 = radscan_intensity(I0, dx)
 
     print("precise")
     loss_precise_temp = {}
@@ -336,11 +338,14 @@ for sigma in sigmas:
         print(epsilon)
         intensity_evolution = [I0]
         for time in n_turns:
-            mask = np.copy(lin_data[epsilon])
-            mask[mask < time] = 0
-            mask[mask >= time] = 1
-            masked_weights = weights * mask
-            intensity_evolution.append(grid_intensity(masked_weights))
+            mask = {}
+            for angle in data[epsilon]:
+                mask[angle] = [x >= time for x in data[epsilon][angle]]
+            masked_weights = {}
+            for angle in data[epsilon]:
+                masked_weights[angle] = [mask[angle][i] * weights[angle][i]
+                                         for i in range(len(mask[angle]))]
+            intensity_evolution.append(radscan_intensity(masked_weights))
         loss_precise_temp[epsilon] = np.asarray(intensity_evolution) / I0
     loss_precise[sigma] = loss_precise_temp
 
@@ -348,15 +353,21 @@ for sigma in sigmas:
     loss_anglescan_temp = {}
     for epsilon in lin_data:
         print(epsilon)
-        intensity_evolution = [1]
+        intensity_evolution = [I0]
         for time in n_turns:
-            intensity_evolution.append(
-                loss_from_anglescan(contour_data[epsilon], time, sigma))
-        loss_anglescan_temp[epsilon] = np.asarray(intensity_evolution)
+            mask = {}
+            for angle in data[epsilon]:
+                mask[angle] = [i * dx <= contour_data[epsilon][angle][time] 
+                                for i in range(len(data[epsilon][angle]))]
+            masked_weights = {}
+            for angle in data[epsilon]:
+                masked_weights[angle] = [mask[angle][i] * weights[angle][i]
+                                         for i in range(len(mask[angle]))]
+            intensity_evolution.append(radscan_intensity(masked_weights))
+        loss_anglescan_temp[epsilon] = np.asarray(intensity_evolution) / I0
     loss_anglescan[sigma] = loss_anglescan_temp
 
     print("from fit1")
-
     loss_D_fit_temp = {}
     loss_D_fit_temp_err = {}
     for epsilon in best_fit_parameters1:
@@ -390,7 +401,6 @@ for sigma in sigmas:
     loss_D_fit1_err[sigma] = loss_D_fit_temp_err
 
     print("from fit2")
-
     loss_D_fit_temp = {}
     loss_D_fit_temp_err = {}
     for epsilon in best_fit_parameters2:
@@ -443,8 +453,16 @@ for sigma in loss_precise:
     processed_data_anglescan[sigma] = processed_data_anglescan_temp
 
 #%%
-
 print("Fit on precise loss.")
+
+# Search parameters
+k_max = 7.
+k_min = -10.
+dk = 0.02
+
+dA = 0.0001
+A_max = 0.01
+A_min = 0.001 ### under this value it doesn't converge
 
 fit_precise_loss1 = {}
 fit_precise_loss2 = {}
@@ -487,6 +505,15 @@ for sigma in loss_precise:
 
 #%%
 print("Fit on anglescan loss")
+
+# Search parameters
+k_max = 7.
+k_min = -10.
+dk = 0.02
+
+dA = 0.0001
+A_max = 0.01
+A_min = 0.001 ### under this value it doesn't converge
 
 fit_anglescan_loss1 = {}
 fit_anglescan_loss2 = {}
