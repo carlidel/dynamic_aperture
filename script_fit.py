@@ -14,8 +14,14 @@ from fit_library import *
 #%%
 print("load data")
 
-data = pickle.load(open("radscan_dx01_firstonly_manyepsilons_dictionary_v2.pkl", "rb"))
+data = pickle.load(open("radscan_" + 
+                        "dx01_firstonly_manyepsilons_dictionary_v2.pkl", "rb"))
 lin_data = pickle.load(open("linscan_dx01_firstonly_dictionary.pkl", "rb"))
+
+for epsilon in data:
+    item = list(sorted(data[epsilon].keys()))[-1]
+    del data[epsilon][item]
+
 
 # temporary removal of high epsilons for performance:
 #i = 0
@@ -79,7 +85,7 @@ print("Fit on Partitions2")
 
 dA = 0.0001
 A_max = 0.01
-A_min = 0.001 ### under this value it doesn't converge
+A_min = 0.001 + dA ### under this value it doesn't converge
 
 fit_parameters2 = {}
 best_fit_parameters2 = {}
@@ -108,7 +114,6 @@ for epsilon in dynamic_aperture:
             while (best[angle][4] >= A_max * scale_search - dA * scale_search
                    and scale_search <= 1e30):
                 print("Minimum naive! Increase scale_search!")
-                A_min_new = A_max * scale_search
                 scale_search *= 10.
                 if scale_search > 1e30:
                     print("Maximum scale reached! This will be the last fit.")
@@ -125,6 +130,32 @@ for epsilon in dynamic_aperture:
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
 
     fit_parameters2[epsilon] = fit_parameters_epsilon
+    best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
+
+#%%
+print("test final form of fit2.")
+
+da = 0.0001
+a_max = 0.01
+a_min = 0.001 + da ### under this value it doesn't converge
+a_bound = 1e10
+
+best_fit_parameters2 = {}
+
+for epsilon in dynamic_aperture:
+    print(epsilon)
+    # fit2
+    best_fit_parameters_epsilon = {}
+
+    for partition_list in partition_lists:
+        best = {}
+        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+            best[angle] = non_linear_fit2_final(
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                n_turns,
+                a_min, a_max, da, a_bound)
+        best_fit_parameters_epsilon[len(partition_list) - 1] = best
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
 
 #%%
@@ -324,13 +355,10 @@ for sigma in sigmas:
 
     temp = list(data.keys())[0]
     weights = {}
-    I0 = {}
+    I0 = 0.25
     for angle in data[temp]:
         weights[angle] = [intensity_zero_gaussian(i * dx * np.cos(angle),
             i * dx * np.sin(angle), sigma, sigma) for i in range(100)]
-        I0[angle] =  [intensity_zero_gaussian(i * dx * np.cos(angle),
-            i * dx * np.sin(angle), sigma, sigma) for i in range(1000)]
-    I0 = radscan_intensity(I0, dx)
 
     print("precise")
     loss_precise_temp = {}
@@ -894,6 +922,33 @@ for label in lhc_data:
     best_fit_lhc2[label] = best_fit_lhc2_label
 
 #%%
+print("Compute FIT2 Final Version")
+
+da = 0.0001
+a_max = 0.01
+a_min = 0.001 + da ### under this value it doesn't converge
+a_bound = 1e10
+
+best_fit_lhc2 = {}
+
+for label in lhc_data:
+    best_fit_lhc2_label = {}
+    for i in lhc_data[label]:
+        j = 0
+        print(label, i)
+        best_fit_lhc2_correction = []
+        for seed in lhc_data[label][i]:
+            print(j)
+            j += 1
+            best_fit_lhc2_correction.append(
+                non_linear_fit2_final(seed,
+                                      sigma_filler(seed, 0.05),
+                                      np.asarray(sorted(seed.keys())),
+                                      a_min, a_max, da, a_bound))
+        best_fit_lhc2_label[i] = best_fit_lhc2_correction
+    best_fit_lhc2[label] = best_fit_lhc2_label
+
+#%%
 print("Compute FIT2 v1")
 
 dA = 0.01
@@ -1061,6 +1116,82 @@ for label in best_fit_lhc2:
         combine_plots_lhc1(label, kind)
         combine_plots_lhc2(label, kind)
         combine_plots_lhc3(label, kind)
+
+#%%
+print("Nekoroshev data")
+
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+
+from fit_library import *
+
+################################################################################
+################################################################################
+################################################################################
+###  FOURTH PART - BASIC FITS ON NEKOROSHEV SIMULATION DATA  ###################
+################################################################################
+################################################################################
+################################################################################
+
+print("load data")
+
+nek_data = pickle.load(open("data_nek_dictionary.pkl", "rb"))
+
+#%%
+print("reverse engeneering D from intensity")
+
+nek_D = {}
+for label in nek_data:
+    nek_D[label] = (nek_data[label][0],
+                    relative_intensity_D_law(nek_data[label][1], 1)) 
+
+#%%
+print("fit1")
+
+# Search parameters
+k_max = 7.
+k_min = -10.
+dk = 0.02
+
+nek_fit1 = {}
+for label in nek_D:
+    print(label)
+    nek_fit1[label] = select_best_fit1(non_linear_fit1(
+                            dict(zip(nek_D[label][0], nek_D[label][1])),
+                            dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)),
+                            nek_D[label][0],
+                            k_min, k_max, dk))
+
+#%%
+print("fit2")
+
+da = 0.0001
+a_max = 0.01
+a_min = 0.001 + da ### under this value it doesn't converge
+a_bound = 1e20
+
+nek_fit2 = {}
+for label in nek_D:
+    print(label)
+    nek_fit2[label] = non_linear_fit2_final(
+            dict(zip(nek_D[label][0], nek_D[label][1])),
+            dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)),
+            nek_D[label][0],
+            a_min, a_max, da, a_bound)
+    
+#%%
+print("plot the things")
+
+for label in nek_fit1:
+    plot_fit_nek1(nek_fit1[label], label, 
+                  nek_D[label][0],
+                  dict(zip(nek_D[label][0], nek_D[label][1])),
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)))
+    plot_fit_nek1(nek_fit2[label], label, 
+                  nek_D[label][0],
+                  dict(zip(nek_D[label][0], nek_D[label][1])),
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)))
 
 #%%
 from png_to_jpg import *

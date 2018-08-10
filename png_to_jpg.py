@@ -6,6 +6,6 @@ def png_to_jpg(pathname):
 		for name in files:
 			if ".png" in name:
 				img = cv2.imread(os.path.join(root, name))
-				print(root, name)
+				#print(root, name)
 				cv2.imwrite("JPEG/" + root[4:] + "/" + name[:-3] + 'jpg', img)
 				print("Converted: " + name)

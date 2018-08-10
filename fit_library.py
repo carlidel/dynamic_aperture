@@ -241,8 +241,25 @@ def FIT2_linearized(x, k, B, a): # b = exp(B); a = exp(A)
     return np.exp(B - k * np.log(np.log(a * np.asarray(x))))
 
 
+def non_linear_fit2_fixed_a(data, err_data, n_turns, a, da, p0k=0, p0B=0):
+    fit2 = lambda x, k, B: B - k * np.log(np.log(a * x))
+    working_data = {}
+    working_err_data = {}
+    # Preprocessing the data
+    for label in data:
+        working_data[label] = np.log(np.copy(data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) * 
+                                            np.copy(err_data[label]))
+    popt, pcov = curve_fit(fit2,
+                           n_turns, [working_data[i] for i in n_turns],
+                           p0=[p0k, p0B],
+                           sigma=[working_err_data[i] for i in n_turns])
+    return(popt[0], np.sqrt(pcov[0][0]),
+           popt[1], np.sqrt(pcov[1][1]),
+           a, da)
+            
+
 def non_linear_fit2(data, err_data, n_turns, a_min, a_max, da, p0k=0, p0B=0):
-    ### Here fit2 is just log(FIT2) and B = log(b)
     fit2 = lambda x, k, B: B - k * np.log(np.log(a * x))
     chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
                         np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
@@ -275,6 +292,27 @@ def non_linear_fit2(data, err_data, n_turns, a_min, a_max, da, p0k=0, p0B=0):
     assert len(explore_a) > 0
     return explore_a
 
+
+def non_linear_fit2_final(data, err_data, n_turns,
+                          a_min, a_max, da, a_bound, p0k=0, p0B=0):
+    scale_search = 1
+    print(scale_search)
+    best_fit = select_best_fit2(non_linear_fit2(data, err_data, n_turns,
+                                                a_min, a_max, da,
+                                                p0k, p0B))
+    while (best_fit[4] >= a_max * scale_search - da * scale_search and
+                          scale_search <= a_bound):
+        scale_search *= 10
+        print(scale_search)
+        if scale_search > a_bound:
+            print("Set a = 1!")
+            return non_linear_fit2_fixed_a(data, err_data, n_turns,
+                                           1., 0.1, p0k, p0B)
+        best_fit = select_best_fit2(non_linear_fit2(data, err_data, n_turns,
+                                                    a_min, a_max * scale_search,
+                                                    da * scale_search,
+                                                    p0k, p0B))
+    return best_fit
 
 def non_linear_fit2_naive(data, err_data, n_turns, p0k=0, p0B=0, p0a=0):
     fit2 = lambda x, k, B, A: B - k * np.log(np.log(x*a))
@@ -409,7 +447,8 @@ def pass_params_fit2_v1(x, params):
 ################################################################################
 ################################################################################
 
-def plot_fit_basic1(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
+def plot_fit_basic1(fit_params, N, epsilon, angle, n_turns, dynamic_aperture,
+                    imgpath="img/fit/fit1"):
     plt.errorbar(
         n_turns, [dynamic_aperture[epsilon][N][angle][0][i] for i in n_turns],
         yerr=[dynamic_aperture[epsilon][N][angle][1][i] for i in n_turns],
@@ -456,13 +495,14 @@ def plot_fit_basic1(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
     plt.legend(prop={"size": 7})
     plt.tight_layout()
     plt.savefig(
-        "img/fit/fit1_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".
+        imgpath + "_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".
         format(epsilon[2], epsilon[0], epsilon[1], angle, N),
         dpi=DPI)
     plt.clf()
 
 
-def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
+def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture,
+                    imgpath="img/fit/fit2"):
     plt.errorbar(
         n_turns, [dynamic_aperture[epsilon][N][angle][0][i] for i in n_turns],
         yerr=[dynamic_aperture[epsilon][N][angle][1][i] for i in n_turns],
@@ -505,7 +545,7 @@ def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture):
     plt.legend(prop={"size": 7})
     plt.tight_layout()
     plt.savefig(
-        "img/fit/fit2_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".
+        imgpath + "_eps{:2.0f}_wx{:3.3f}_wy{:3.3f}_angle{:3.3f}_Npart{}.png".
         format(epsilon[2], epsilon[0], epsilon[1], angle, N),
         dpi=DPI)
     plt.clf()
@@ -834,8 +874,10 @@ def plot_chi_squared2(fit_params,
         markersize=0.5,
         linewidth=0.5)
     plt.xlabel("a value")
-    #plt.xscale("log")
+    plt.xscale("log")
     plt.ylabel("Chi-Squared value")
+    plt.yscale("log")
+    plt.grid(True)
     plt.title(
         "non linear FIT2 Chi-Squared evolution, $\epsilon = {:2.0f}$,\n number of partitions $= {}$, central angle $= {:2.2f}$".
         format(epsilon, n_partitions, angle))
@@ -1079,8 +1121,8 @@ def radscan_intensity(grid, dx=dx):
     lines = {}
     for angle in grid:
         #print(processed[angle])
-        lines[angle] = integrate.trapz(processed[angle], dx=dx)
-    return integrate.trapz([lines[angle] for angle in list(sorted(processed))],
+        lines[angle] = integrate.simps(processed[angle], dx=dx)
+    return integrate.simps([lines[angle] for angle in list(sorted(processed))],
             x=[angle for angle in list(sorted(lines))])
 
 
@@ -1201,11 +1243,11 @@ def sigma_filler(data_dict, perc):
 
 def lambda_color(fit1_selected, fit2_decent):
     if not (fit1_selected ^ fit2_decent):
-        return "y--"
+        return "g--"
     elif (fit1_selected and not fit2_decent):
-        return "g-"
+        return "g--"
     elif (fit2_decent and not fit1_selected):
-        return "r-"
+        return "g--"
 
 
 def plot_lhc_fit(best_fit, data, func, label, fit1_p, fit2_b):
@@ -1226,7 +1268,7 @@ def plot_lhc_fit(best_fit, data, func, label, fit1_p, fit2_b):
             label='fit {}'.format(i))
         j += 1
     plt.xlabel("N turns")
-    # plt.xscale("log")
+    plt.xscale("log")
     plt.ylabel("D (A.U.)")
     plt.title("Tutto LHC, " + label)
     plt.tight_layout()
@@ -1451,7 +1493,7 @@ def combine_plots_lhc1(folder, kind):
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((img9, img1, img8), axis=1)
+    row1 = np.concatenate((filler, img1, img8), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
@@ -1470,7 +1512,7 @@ def combine_plots_lhc2(folder, kind):
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((img9, img1, img8), axis=1)
+    row1 = np.concatenate((img9, img1, filler), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
@@ -1488,7 +1530,7 @@ def combine_plots_lhc3(folder, kind):
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((img9, img1, img8), axis=1)
+    row1 = np.concatenate((img9, img1, filler), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
@@ -1537,3 +1579,104 @@ def combine_image_3x3(imgname, path1, path2="none", path3="none", path4="none",
     row3 = np.concatenate((img7, img8, img9), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
     cv2.imwrite(imgname, image)
+
+
+def plot_fit_nek1(fit_params, label, n_turns, dynamic_aperture,
+                  dynamic_aperture_err, imgpath="img/nek/fit1"):
+    plt.errorbar(
+        n_turns, [dynamic_aperture[i] for i in n_turns],
+        yerr=[dynamic_aperture_err[i] for i in n_turns],
+        linewidth=0,
+        elinewidth=2,
+        label='Data')
+    plt.plot(
+        n_turns,
+        pass_params_fit1(n_turns, fit_params),
+        'g--',
+        linewidth=0.5,
+        label='fit: $D_\infty={:.2}, B={:.2}, k={:.2}$'.format(
+            fit_params[0], fit_params[2], fit_params[4]))
+    plt.axhline(
+        y=fit_params[0],
+        color='r',
+        linestyle='-',
+        label='$y=D_\infty={:.2}$'.format(fit_params[0]))
+    plt.xlabel("$N$ turns")
+    plt.xscale("log")
+    plt.ylabel("$D (A.U.)$")
+    #plt.ylim(0., 1.)
+    plt.title(
+        "FIT1, label $= {}$".format(label))
+    # Tweak for legend.
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$D_\infty = {:.2} \pm {:.2}$".format(fit_params[0],
+                                                    fit_params[1]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$B = {:.2} \pm {:.2}$".format(fit_params[2], fit_params[3]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$k = {:.2} \pm {:.2}$".format(fit_params[4], fit_params[5]))
+    # And then the legend.
+    plt.legend(prop={"size": 7})
+    plt.tight_layout()
+    plt.savefig(
+        imgpath + "_label{}.png".
+        format(label),
+        dpi=DPI)
+    plt.clf()
+
+
+def plot_fit_nek2(fit_params, label, n_turns, dynamic_aperture,
+                  dynamic_aperture_err, imgpath="img/nek/fit2"):
+    plt.errorbar(
+        n_turns, [dynamic_aperture[i] for i in n_turns],
+        yerr=[dynamic_aperture_err[i] for i in n_turns],
+        linewidth=0,
+        elinewidth=2,
+        label='Data')
+    plt.plot(
+        n_turns,
+        pass_params_fit2(n_turns, fit_params),
+        'g--',
+        linewidth=0.5,
+        label='fit: $a={:.2}, b={:.2}, k={:.2}$'.format(
+            fit_params[4], np.exp(fit_params[2]), fit_params[0]))
+    plt.xlabel("$N$ turns")
+    plt.xscale("log")
+    plt.ylabel("$D (A.U.)$")
+    #plt.ylim(0., 1.)
+    plt.title(
+        "FIT2, label $ = {}$".format(label))
+    # Tweak for legend.
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$a = {:.2} \pm {:.2}$".format(fit_params[4], fit_params[5]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$b = {:.2} \pm {:.2}$".format(
+            np.exp(fit_params[2]),
+            np.exp(fit_params[2]) * fit_params[3]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$k = {:.2} \pm {:.2}$".format(fit_params[0], fit_params[1]))
+    # And then the legend.
+    plt.legend(prop={"size": 7})
+    plt.tight_layout()
+    plt.savefig(
+        imgpath + "_label{}.png".format(label),
+        dpi=DPI)
+    plt.clf()
