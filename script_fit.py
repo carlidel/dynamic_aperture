@@ -586,9 +586,16 @@ for sigma in loss_anglescan:
     fit_anglescan_loss2[sigma] = fit_sigma_temp2
 
 #%%
+print("compute loss precise from precise fits.")
 
 loss_precise_fit1 = {}
+loss_precise_fit1_min = {}
+loss_precise_fit1_max = {}
+
 loss_precise_fit2 = {}
+loss_precise_fit2_min = {}
+loss_precise_fit2_max = {}
+
 loss_precise_fit1_err = {}
 loss_precise_fit2_err = {}
 
@@ -597,15 +604,29 @@ for sigma in sigmas:
     print("from fit1")
 
     loss_D_fit_temp = {}
+    loss_D_fit_temp_min = {}
+    loss_D_fit_temp_max = {}
     loss_D_fit_temp_err = {}
     for epsilon in fit_precise_loss1[sigma]:
         print(epsilon)
         intensity_evolution = [1.]
+        intensity_evolution_min = [1.]
+        intensity_evolution_max = [1.]
         error_evolution = [0.]
         for time in n_turns:
             intensity_evolution.append(
                 single_partition_intensity(fit_precise_loss1[sigma][epsilon],
                                            pass_params_fit1,
+                                           time,
+                                           sigma))
+            intensity_evolution_min.append(
+                single_partition_intensity(fit_precise_loss1[sigma][epsilon],
+                                           pass_params_fit1_min,
+                                           time,
+                                           sigma))
+            intensity_evolution_max.append(
+                single_partition_intensity(fit_precise_loss1[sigma][epsilon],
+                                           pass_params_fit1_max,
                                            time,
                                            sigma))
             error_evolution.append(
@@ -616,22 +637,40 @@ for sigma in sigmas:
                                             time,
                                             sigma))
         loss_D_fit_temp[epsilon] = intensity_evolution
+        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
+        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
         loss_D_fit_temp_err[epsilon] = error_evolution
     loss_precise_fit1[sigma] = loss_D_fit_temp
+    loss_precise_fit1_min[sigma] = loss_D_fit_temp_min
+    loss_precise_fit1_max[sigma] = loss_D_fit_temp_max
     loss_precise_fit1_err[sigma] = loss_D_fit_temp_err
 
     print("from fit2")
 
     loss_D_fit_temp = {}
+    loss_D_fit_temp_min = {}
+    loss_D_fit_temp_max = {}
     loss_D_fit_temp_err = {}
     for epsilon in fit_precise_loss2[sigma]:
         print(epsilon)
         intensity_evolution = [1.]
+        intensity_evolution_min = [1.]
+        intensity_evolution_max = [1.]
         error_evolution = [0.]
         for time in n_turns:
             intensity_evolution.append(
                 single_partition_intensity(fit_precise_loss2[sigma][epsilon],
                                            pass_params_fit2,
+                                           time,
+                                           sigma))
+            intensity_evolution_max.append(
+                single_partition_intensity(fit_precise_loss2[sigma][epsilon],
+                                           pass_params_fit2_max,
+                                           time,
+                                           sigma))
+            intensity_evolution_min.append(
+                single_partition_intensity(fit_precise_loss2[sigma][epsilon],
+                                           pass_params_fit2_min,
                                            time,
                                            sigma))
             error_evolution.append(
@@ -642,14 +681,25 @@ for sigma in sigmas:
                                             time,
                                             sigma))
         loss_D_fit_temp[epsilon] = intensity_evolution
+        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
+        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
         loss_D_fit_temp_err[epsilon] = error_evolution
     loss_precise_fit2[sigma] = loss_D_fit_temp
+    loss_precise_fit2_min[sigma] = loss_D_fit_temp_min
+    loss_precise_fit2_max[sigma] = loss_D_fit_temp_max
     loss_precise_fit2_err[sigma] = loss_D_fit_temp_err
 
 #%%
+print("compute loss anglescan from anglescan fits.")
 
 loss_anglescan_fit1 = {}
+loss_anglescan_fit1_min = {}
+loss_anglescan_fit1_max = {}
+
 loss_anglescan_fit2 = {}
+loss_anglescan_fit2_min = {}
+loss_anglescan_fit2_max = {}
+
 loss_anglescan_fit1_err = {}
 loss_anglescan_fit2_err = {}
 
@@ -658,15 +708,29 @@ for sigma in sigmas:
     print("from fit1")
 
     loss_D_fit_temp = {}
+    loss_D_fit_temp_min = {}
+    loss_D_fit_temp_max = {}
     loss_D_fit_temp_err = {}
     for epsilon in fit_anglescan_loss1[sigma]:
         print(epsilon)
         intensity_evolution = [1.]
+        intensity_evolution_min = [1.]
+        intensity_evolution_max = [1.]
         error_evolution = [0.]
         for time in n_turns:
             intensity_evolution.append(
                 single_partition_intensity(fit_anglescan_loss1[sigma][epsilon],
                                            pass_params_fit1,
+                                           time,
+                                           sigma))
+            intensity_evolution_min.append(
+                single_partition_intensity(fit_anglescan_loss1[sigma][epsilon],
+                                           pass_params_fit1_min,
+                                           time,
+                                           sigma))
+            intensity_evolution_max.append(
+                single_partition_intensity(fit_anglescan_loss1[sigma][epsilon],
+                                           pass_params_fit1_max,
                                            time,
                                            sigma))
             error_evolution.append(
@@ -677,22 +741,40 @@ for sigma in sigmas:
                                             time,
                                             sigma))
         loss_D_fit_temp[epsilon] = intensity_evolution
+        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
+        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
         loss_D_fit_temp_err[epsilon] = error_evolution
     loss_anglescan_fit1[sigma] = loss_D_fit_temp
+    loss_anglescan_fit1_min[sigma] = loss_D_fit_temp_min
+    loss_anglescan_fit1_max[sigma] = loss_D_fit_temp_max
     loss_anglescan_fit1_err[sigma] = loss_D_fit_temp_err
 
     print("from fit2")
 
     loss_D_fit_temp = {}
+    loss_D_fit_temp_min = {}
+    loss_D_fit_temp_max = {}
     loss_D_fit_temp_err = {}
     for epsilon in fit_anglescan_loss2[sigma]:
         print(epsilon)
         intensity_evolution = [1.]
+        intensity_evolution_min = [1.]
+        intensity_evolution_max = [1.]
         error_evolution = [0.]
         for time in n_turns:
             intensity_evolution.append(
                 single_partition_intensity(fit_anglescan_loss2[sigma][epsilon],
                                            pass_params_fit2,
+                                           time,
+                                           sigma))
+            intensity_evolution_min.append(
+                single_partition_intensity(fit_anglescan_loss2[sigma][epsilon],
+                                           pass_params_fit2_min,
+                                           time,
+                                           sigma))
+            intensity_evolution_max.append(
+                single_partition_intensity(fit_anglescan_loss2[sigma][epsilon],
+                                           pass_params_fit2_max,
                                            time,
                                            sigma))
             error_evolution.append(
@@ -703,8 +785,12 @@ for sigma in sigmas:
                                             time,
                                             sigma))
         loss_D_fit_temp[epsilon] = intensity_evolution
+        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
+        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
         loss_D_fit_temp_err[epsilon] = error_evolution
     loss_anglescan_fit2[sigma] = loss_D_fit_temp
+    loss_anglescan_fit2_min[sigma] = loss_D_fit_temp_min
+    loss_anglescan_fit2_max[sigma] = loss_D_fit_temp_max
     loss_anglescan_fit2_err[sigma] = loss_D_fit_temp_err
 
 #%%

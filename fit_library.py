@@ -154,6 +154,18 @@ def FIT1(x, D_inf, B, k):
     return D_inf + B / np.exp(k * np.log(np.log(x)))
 
 
+def FIT1_error_max(x, D_inf, D_inf_err, B, B_err, k, k_err):
+    if B > 0 and k > 0:
+        return FIT1(x, D_inf + D_inf_err, B + B_err, k - k_err)
+    return FIT1(x, D_inf - D_inf_err, B + B_err, k + k_err)
+
+
+def FIT1_error_min(x, D_inf, D_inf_err, B, B_err, k, k_err):
+    if B > 0 and k > 0:
+        return FIT1(x, D_inf - D_inf_err, B - B_err, k + k_err)
+    return FIT1(x, D_inf + D_inf_err, B - B_err, k - k_err)
+
+
 def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
     '''
     data is a dictionary of the dynamic aperture data with n_turns as keys
@@ -226,6 +238,18 @@ def select_best_fit1(parameters):
 def pass_params_fit1(x, params):
     return FIT1(x, params[0], params[2], params[4])
 
+
+def pass_params_fit1_min(x, params):
+    return FIT1_error_min(x, params[0], params[1],
+                          params[2], params[3],
+                          params[4], params[5])
+
+
+def pass_params_fit1_max(x, params):
+    return FIT1_error_max(x, params[0], params[1],
+                          params[2], params[3],
+                          params[4], params[5])
+
 ################################################################################
 ################################################################################
 ##  FIT2 FUNCTIONS  ############################################################
@@ -239,6 +263,14 @@ def FIT2(x, a, b, k):
 
 def FIT2_linearized(x, k, B, a): # b = exp(B); a = exp(A)
     return np.exp(B - k * np.log(np.log(a * np.asarray(x))))
+
+
+def FIT2_linearized_err_max(x, k, k_err, B, B_err, a, a_err):
+    return FIT2_linearized(x, k - k_err, B + B_err, a - a_err)
+
+
+def FIT2_linearized_err_min(x, k, k_err, B, B_err, a, a_err):
+    return FIT2_linearized(x, k + k_err, B - B_err, a + a_err)
 
 
 def non_linear_fit2_fixed_a(data, err_data, n_turns, a, da, p0k=0, p0B=0):
@@ -354,6 +386,19 @@ def select_best_fit2(parameters):
 
 def pass_params_fit2(x, params):
     return FIT2_linearized(x, params[0], params[2], params[4])
+
+
+def pass_params_fit2_min(x, params):
+    return FIT2_linearized_err_min(x, params[0], params[1],
+                                   params[2], params[3],
+                                   params[4], params[5])
+
+
+def pass_params_fit2_max(x, params):
+    return FIT2_linearized_err_max(x, params[0], params[1],
+                                   params[2], params[3],
+                                   params[4], params[5])
+
 
 ################################################################################
 ####  FIT2 v1 which is just an alternative form  ###############################
@@ -1193,7 +1238,8 @@ def error_loss_estimation_single_partition(best_fit_params, fit_func,
 
 def plot_losses(title, filename,
                 n_turns, data_list=[], data_label_list=[],
-                param_list=[], param_error_list=[], param_label_list=[]):
+                param_list=[], param_list_min=[], param_list_max=[],
+                param_error_list=[], param_label_list=[]):
     for i in range(len(data_list)):
         plt.plot(
             n_turns,
@@ -1207,6 +1253,11 @@ def plot_losses(title, filename,
             yerr=param_error_list[i][1:],
             linewidth=0.5,
             label=param_label_list[i])
+        plt.fill_between(
+            n_turns,
+            param_list_min[i][1:],
+            param_list_max[i][1:],
+            interpolate=True, alpha=0.5)
     plt.title(title)
     plt.xlabel("N turns")
     plt.xscale("log")
