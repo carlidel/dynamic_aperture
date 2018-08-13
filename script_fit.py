@@ -320,6 +320,28 @@ for N in best_fit_parameters2[temp]:
                                         best_fit_parameters2_v1,
                                         N, angle)
 
+#%%
+print("Parameters over partitions")
+for epsilon in best_fit_parameters1:
+    print(epsilon)
+    label = "partitioneps{:2.2f}".format(epsilon[2])
+    fit_parameters_evolution1(best_fit_parameters1[epsilon],
+        label)
+    combine_image_3x1("img/fit/partitions1_eps{:2.2f}.png".format(epsilon[2]),
+        "img/fit/fit1" + label + "_Dinf.png",
+        "img/fit/fit1" + label + "_B.png",
+        "img/fit/fit1" + label + "_k.png")
+
+for epsilon in best_fit_parameters2:
+    print(epsilon)
+    label = "partitioneps{:2.2f}".format(epsilon[2])
+    fit_parameters_evolution2(best_fit_parameters2[epsilon],
+        label)
+    combine_image_3x1("img/fit/partitions2_eps{:2.2f}.png".format(epsilon[2]),
+        "img/fit/fit2" + label + "_a.png",
+        "img/fit/fit2" + label + "_B.png",
+        "img/fit/fit2" + label + "_k.png")
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -488,9 +510,10 @@ k_max = 7.
 k_min = -10.
 dk = 0.02
 
-dA = 0.0001
-A_max = 0.01
-A_min = 0.001 ### under this value it doesn't converge
+da = 0.0001
+a_max = 0.01
+a_min = 0.001 ### under this value it doesn't converge
+a_bound = 1e20
 
 fit_precise_loss1 = {}
 fit_precise_loss2 = {}
@@ -510,24 +533,13 @@ for sigma in loss_precise:
                 k_min,
                 k_max,
                 dk))
-        scale_search = 1
-        while True:
-            print(scale_search)
-            fit_sigma_temp2[epsilon] = select_best_fit2(
-                non_linear_fit2(
-                    dict(zip(n_turns,
-                        processed_data_precise[sigma][epsilon])),
-                    dict(zip(n_turns,
-                        processed_data_precise[sigma][epsilon] * 0.01)),
-                    n_turns,
-                    A_min,
-                    A_max * scale_search,
-                    dA * scale_search))
-            if (fit_sigma_temp2[epsilon][4] < (A_max - dA) * scale_search or
-                    fit_sigma_temp2[epsilon][4] > 1e10):
-                break
-            else:
-                scale_search *= 10
+        fit_sigma_temp2[epsilon] = non_linear_fit2_final(
+                dict(zip(n_turns,
+                         processed_data_precise[sigma][epsilon])),
+                dict(zip(n_turns,
+                         processed_data_precise[sigma][epsilon] * 0.01)),
+                n_turns,
+                a_min, a_max, da, a_bound)
     fit_precise_loss1[sigma] = fit_sigma_temp1
     fit_precise_loss2[sigma] = fit_sigma_temp2
 
@@ -539,9 +551,10 @@ k_max = 7.
 k_min = -10.
 dk = 0.02
 
-dA = 0.0001
-A_max = 0.01
-A_min = 0.001 ### under this value it doesn't converge
+da = 0.0001
+a_max = 0.01
+a_min = 0.001 ### under this value it doesn't converge
+a_bound = 1e20
 
 fit_anglescan_loss1 = {}
 fit_anglescan_loss2 = {}
@@ -561,27 +574,14 @@ for sigma in loss_anglescan:
                 dict(zip(n_turns,
                     processed_data_anglescan[sigma][epsilon] * 0.01)),
                 n_turns,
-                k_min,
-                k_max,
-                dk))
-        scale_search = 1
-        while True:
-            print(scale_search)
-            fit_sigma_temp2[epsilon] = select_best_fit2(
-                non_linear_fit2(
-                    dict(zip(n_turns,
-                        processed_data_anglescan[sigma][epsilon])),
-                    dict(zip(n_turns,
-                        processed_data_anglescan[sigma][epsilon] * 0.01)),
-                    n_turns,
-                    A_min,
-                    A_max * scale_search,
-                    dA * scale_search))
-            if (fit_sigma_temp2[epsilon][4] < (A_max - dA) * scale_search or
-                    fit_sigma_temp2[epsilon][4] > 1e10):
-                break
-            else:
-                scale_search *= 10
+                k_min, k_max, dk))
+        fit_sigma_temp2[epsilon] = non_linear_fit2_final(
+                dict(zip(n_turns,
+                         processed_data_precise[sigma][epsilon])),
+                dict(zip(n_turns,
+                         processed_data_precise[sigma][epsilon] * 0.01)),
+                n_turns,
+                a_min, a_max, da, a_bound)
     fit_anglescan_loss1[sigma] = fit_sigma_temp1
     fit_anglescan_loss2[sigma] = fit_sigma_temp2
 

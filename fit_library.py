@@ -43,10 +43,10 @@ n_turns = np.array([
 
 # Partition list for basic angle partitioning
 partition_lists = [
-    [0, np.pi / 2]  # Always always keep this one
-    # ,[0, np.pi / 4, np.pi / 2],
-    # [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
-    # [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2],
+    [0, np.pi / 2],  # Always always keep this one
+    [0, np.pi / 4, np.pi / 2],
+    [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
+    [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]
     # [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
     # [
     #     0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12,
@@ -698,12 +698,13 @@ def fit_parameters_evolution2(fit_parameters, label="plot"):
         k_temp_err = []
         for angle in fit_parameters[N]:
             theta_temp.append(angle / np.pi)
-            a_temp.append(fit_parameters[N][angle][0])
-            B_temp.append(fit_parameters[N][angle][2])
-            k_temp.append(fit_parameters[N][angle][4])
-            a_temp_err.append(fit_parameters[N][angle][1])
-            B_temp_err.append(fit_parameters[N][angle][3])
-            k_temp_err.append(k_error)
+            a_temp.append(fit_parameters[N][angle][4])
+            B_temp.append(np.exp(fit_parameters[N][angle][2]))
+            k_temp.append(fit_parameters[N][angle][0])
+            a_temp_err.append(fit_parameters[N][angle][5])
+            B_temp_err.append(np.exp(fit_parameters[N][angle][2]) * 
+                              fit_parameters[N][angle][3])
+            k_temp_err.append(fit_parameters[N][angle][1])
         theta.append(theta_temp)
         a.append(a_temp)
         B.append(B_temp)
@@ -723,6 +724,7 @@ def fit_parameters_evolution2(fit_parameters, label="plot"):
             elinewidth=1)
         plt.xlabel("Theta $(rad / \pi)$")
         plt.ylabel("Fit value " + "a " + " (A.U.)")
+        plt.yscale("log")
         plt.title("fit2, " + label + ", " + "a " + "parameter")
         plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
         plt.tight_layout()
@@ -737,8 +739,8 @@ def fit_parameters_evolution2(fit_parameters, label="plot"):
             linewidth=0,
             elinewidth=1)
         plt.xlabel("Theta $(rad / \pi)$")
-        plt.ylabel("Fit value B (A.U.)")
-        plt.title("fit2, " + label + ", B parameter")
+        plt.ylabel("Fit value b (A.U.)")
+        plt.title("fit2, " + label + ", b parameter")
         plt.axhline(y=0, color='r', linestyle='-', linewidth=0.5)
         plt.tight_layout()
     plt.savefig("img/fit/" + "fit2" + label + "_B.png", dpi=DPI)
@@ -1545,6 +1547,15 @@ def combine_plots_lhc3(folder, kind):
 ################################################################################
 ################################################################################
 ################################################################################
+
+def combine_image_3x1(imgname, path1, path2="none", path3="none"):
+    img1 = cv2.imread(path1)
+    filler = np.zeros(img1.shape)
+    img2 = cv2.imread(path2) if path2 is not "none" else filler
+    img3 = cv2.imread(path3) if path3 is not "none" else filler
+    row1 = np.concatenate((img1, img2, img3), axis=1)
+    cv2.imwrite(imgname, row1)
+
 
 def combine_image_3x2(imgname, path1, path2="none", path3="none", path4="none",
                       path5="none", path6="none"):
