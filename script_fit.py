@@ -81,6 +81,32 @@ for epsilon in dynamic_aperture:
     best_fit_parameters1[epsilon] = best_fit_parameters_epsilon
 
 #%%
+print("Fit on Partitions1 final")
+
+# Search parameters
+k_lim = 0.1
+dk = 0.0001
+k_bound = 10000
+
+best_fit_parameters1 = {}
+
+for epsilon in dynamic_aperture:
+    print(epsilon)
+    # fit1
+    best_fit_parameters_epsilon = {}
+
+    for partition_list in partition_lists:
+        best = {}
+        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+            best[angle] = non_linear_fit1_final(
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                n_turns, k_lim, dk, k_bound)
+        best_fit_parameters_epsilon[len(partition_list) - 1] = best
+    best_fit_parameters1[epsilon] = best_fit_parameters_epsilon
+
+
+#%%
 print("Fit on Partitions2")
 
 dA = 0.0001
@@ -356,19 +382,17 @@ print("Is this loss?")
 # Weights at beginning
 sigmas = [0.2, 0.25, 0.5, 0.75, 1]
 
-# Search parameters
-k_max = 7.
-k_min = -10.
-dk = 0.02
-
-dA = 0.0001
-A_max = 0.01
-A_min = 0.001 ### under this value it doesn't converge
-
 loss_precise = {}
 loss_anglescan = {}
+
 loss_D_fit1 = {}
+loss_D_fit1_min = {}
+loss_D_fit1_max = {}
+
 loss_D_fit2 = {}
+loss_D_fit2_min = {}
+loss_D_fit2_max = {}
+
 loss_D_fit1_err = {}
 loss_D_fit2_err = {}
 
@@ -384,7 +408,7 @@ for sigma in sigmas:
 
     print("precise")
     loss_precise_temp = {}
-    for epsilon in lin_data:
+    for epsilon in data:
         print(epsilon)
         intensity_evolution = [I0]
         for time in n_turns:
@@ -401,7 +425,7 @@ for sigma in sigmas:
 
     print("anglescan")
     loss_anglescan_temp = {}
-    for epsilon in lin_data:
+    for epsilon in data:
         print(epsilon)
         intensity_evolution = [I0]
         for time in n_turns:
@@ -419,19 +443,39 @@ for sigma in sigmas:
 
     print("from fit1")
     loss_D_fit_temp = {}
+    loss_D_fit_temp_min = {}
+    loss_D_fit_temp_max = {}
     loss_D_fit_temp_err = {}
     for epsilon in best_fit_parameters1:
         print(epsilon)
         loss_D_fit_temp_part = {}
+        loss_D_fit_temp_part_min = {}
+        loss_D_fit_temp_part_max = {}
         loss_D_fit_temp_part_err = {}
         for N in best_fit_parameters1[epsilon]:
             intensity_evolution = [1.]
+            intensity_evolution_min = [1.]
+            intensity_evolution_max = [1.]
             error_evolution = [0.]
             for time in n_turns:
                 intensity_evolution.append(
                     multiple_partition_intensity(
                                             best_fit_parameters1[epsilon][N],
                                             pass_params_fit1,
+                                            N,
+                                            time,
+                                            sigma))
+                intensity_evolution_min.append(
+                    multiple_partition_intensity(
+                                            best_fit_parameters1[epsilon][N],
+                                            pass_params_fit1_min,
+                                            N,
+                                            time,
+                                            sigma))
+                intensity_evolution_max.append(
+                    multiple_partition_intensity(
+                                            best_fit_parameters1[epsilon][N],
+                                            pass_params_fit1_max,
                                             N,
                                             time,
                                             sigma))
@@ -443,28 +487,54 @@ for sigma in sigmas:
                                           time,
                                           sigma))
             loss_D_fit_temp_part[N] = np.asarray(intensity_evolution)
+            loss_D_fit_temp_part_min[N] = np.asarray(intensity_evolution_min)
+            loss_D_fit_temp_part_max[N] = np.asarray(intensity_evolution_max)
             loss_D_fit_temp_part_err[N] = np.asarray(error_evolution)
             #print(loss_D_fit_temp_part[N])
         loss_D_fit_temp[epsilon] = loss_D_fit_temp_part
+        loss_D_fit_temp_min[epsilon] = loss_D_fit_temp_part_min
+        loss_D_fit_temp_max[epsilon] = loss_D_fit_temp_part_max
         loss_D_fit_temp_err[epsilon] = loss_D_fit_temp_part_err
     loss_D_fit1[sigma] = loss_D_fit_temp
+    loss_D_fit1_min[sigma] = loss_D_fit_temp_min
+    loss_D_fit1_max[sigma] = loss_D_fit_temp_max
     loss_D_fit1_err[sigma] = loss_D_fit_temp_err
 
     print("from fit2")
     loss_D_fit_temp = {}
+    loss_D_fit_temp_min = {}
+    loss_D_fit_temp_max = {}
     loss_D_fit_temp_err = {}
     for epsilon in best_fit_parameters2:
         print(epsilon)
         loss_D_fit_temp_part = {}
+        loss_D_fit_temp_part_min = {}
+        loss_D_fit_temp_part_max = {}
         loss_D_fit_temp_part_err = {}
         for N in best_fit_parameters2[epsilon]:
             intensity_evolution = [1.]
+            intensity_evolution_min = [1.]
+            intensity_evolution_max = [1.]
             error_evolution = [0.]
             for time in n_turns:
                 intensity_evolution.append(
                     multiple_partition_intensity(
                                             best_fit_parameters2[epsilon][N],
                                             pass_params_fit2,
+                                            N,
+                                            time,
+                                            sigma))
+                intensity_evolution_min.append(
+                    multiple_partition_intensity(
+                                            best_fit_parameters2[epsilon][N],
+                                            pass_params_fit2_min,
+                                            N,
+                                            time,
+                                            sigma))
+                intensity_evolution_max.append(
+                    multiple_partition_intensity(
+                                            best_fit_parameters2[epsilon][N],
+                                            pass_params_fit2_max,
                                             N,
                                             time,
                                             sigma))
@@ -476,11 +546,17 @@ for sigma in sigmas:
                                           time,
                                           sigma))
             loss_D_fit_temp_part[N] = np.asarray(intensity_evolution)
+            loss_D_fit_temp_part_min[N] = np.asarray(intensity_evolution_min)
+            loss_D_fit_temp_part_max[N] = np.asarray(intensity_evolution_max)
             loss_D_fit_temp_part_err[N] = np.asarray(error_evolution)
             #print(loss_D_fit_temp_part[N])
         loss_D_fit_temp[epsilon] = loss_D_fit_temp_part
+        loss_D_fit_temp_min[epsilon] = loss_D_fit_temp_part_min
+        loss_D_fit_temp_max[epsilon] = loss_D_fit_temp_part_max
         loss_D_fit_temp_err[epsilon] = loss_D_fit_temp_part_err
     loss_D_fit2[sigma] = loss_D_fit_temp
+    loss_D_fit2_min[sigma] = loss_D_fit_temp_min
+    loss_D_fit2_max[sigma] = loss_D_fit_temp_max
     loss_D_fit2_err[sigma] = loss_D_fit_temp_err
 
 #%%
@@ -506,13 +582,13 @@ for sigma in loss_precise:
 print("Fit on precise loss.")
 
 # Search parameters
-k_max = 7.
-k_min = -10.
-dk = 0.02
+k_lim = 0.1
+dk = 0.0001
+k_bound = 10000
 
 da = 0.0001
 a_max = 0.01
-a_min = 0.001 ### under this value it doesn't converge
+a_min = 0.001 + da ### under this value it doesn't converge
 a_bound = 1e20
 
 fit_precise_loss1 = {}
@@ -523,16 +599,15 @@ for sigma in loss_precise:
     fit_sigma_temp1 = {}
     fit_sigma_temp2 = {}
     for epsilon in loss_precise[sigma]:
-        fit_sigma_temp1[epsilon] = select_best_fit1(
-            non_linear_fit1(
+        fit_sigma_temp1[epsilon] = non_linear_fit1_final(
                 dict(zip(n_turns,
                     processed_data_precise[sigma][epsilon])),
                 dict(zip(n_turns,
                     processed_data_precise[sigma][epsilon] * 0.01)),
                 n_turns,
-                k_min,
-                k_max,
-                dk))
+                k_lim,
+                dk,
+                k_bound)
         fit_sigma_temp2[epsilon] = non_linear_fit2_final(
                 dict(zip(n_turns,
                          processed_data_precise[sigma][epsilon])),
@@ -547,13 +622,13 @@ for sigma in loss_precise:
 print("Fit on anglescan loss")
 
 # Search parameters
-k_max = 7.
-k_min = -10.
-dk = 0.02
+k_lim = 0.1
+dk = 0.0001
+k_bound = 10000
 
 da = 0.0001
 a_max = 0.01
-a_min = 0.001 ### under this value it doesn't converge
+a_min = 0.001 + da ### under this value it doesn't converge
 a_bound = 1e20
 
 fit_anglescan_loss1 = {}
@@ -567,14 +642,13 @@ for sigma in loss_anglescan:
         processed_data = D_from_loss(
             np.copy(loss_anglescan[sigma][epsilon][1:]),
             sigma)
-        fit_sigma_temp1[epsilon] = select_best_fit1(
-            non_linear_fit1(
+        fit_sigma_temp1[epsilon] = non_linear_fit1_final(
                 dict(zip(n_turns,
                     processed_data_anglescan[sigma][epsilon])),
                 dict(zip(n_turns,
                     processed_data_anglescan[sigma][epsilon] * 0.01)),
                 n_turns,
-                k_min, k_max, dk))
+                k_lim, dk, k_bound)
         fit_sigma_temp2[epsilon] = non_linear_fit2_final(
                 dict(zip(n_turns,
                          processed_data_precise[sigma][epsilon])),
@@ -823,6 +897,10 @@ for sigma in sigmas:
             ["Precise loss"],
             [loss_precise_fit1[sigma][epsilon],
                 loss_precise_fit2[sigma][epsilon]],
+            [loss_precise_fit1_min[sigma][epsilon],
+                loss_precise_fit2_min[sigma][epsilon]],
+            [loss_precise_fit1_max[sigma][epsilon],
+                loss_precise_fit2_max[sigma][epsilon]],
             [loss_precise_fit1_err[sigma][epsilon],
                 loss_precise_fit2_err[sigma][epsilon]],
             ["D loss precise FIT1", "D loss precise FIT2"])
@@ -839,6 +917,10 @@ for sigma in sigmas:
             ["Precise loss"],
             [loss_anglescan_fit1[sigma][epsilon],
                 loss_anglescan_fit2[sigma][epsilon]],
+            [loss_anglescan_fit1_min[sigma][epsilon],
+                loss_anglescan_fit2_min[sigma][epsilon]],
+            [loss_anglescan_fit1_max[sigma][epsilon],
+                loss_anglescan_fit2_max[sigma][epsilon]],
             [loss_anglescan_fit1_err[sigma][epsilon],
                 loss_anglescan_fit2_err[sigma][epsilon]],
             ["D loss anglescan FIT1", "D loss anglescan FIT2"])
@@ -857,6 +939,14 @@ for sigma in sigmas:
                 for N in loss_D_fit1[sigma][epsilon]] + 
                 [loss_D_fit2[sigma][epsilon][N] 
                 for N in loss_D_fit2[sigma][epsilon]],
+            [loss_D_fit1_min[sigma][epsilon][N] 
+                for N in loss_D_fit1_min[sigma][epsilon]] + 
+                [loss_D_fit2_min[sigma][epsilon][N] 
+                for N in loss_D_fit2_min[sigma][epsilon]],
+            [loss_D_fit1_max[sigma][epsilon][N] 
+                for N in loss_D_fit1_max[sigma][epsilon]] + 
+                [loss_D_fit2_max[sigma][epsilon][N] 
+                for N in loss_D_fit2_max[sigma][epsilon]],
             [loss_D_fit1_err[sigma][epsilon][N] 
                 for N in loss_D_fit1_err[sigma][epsilon]] + 
                 [loss_D_fit2_err[sigma][epsilon][N] 
@@ -882,6 +972,18 @@ for sigma in sigmas:
                 for N in loss_D_fit2[sigma][epsilon]] +
                 [loss_anglescan_fit1[sigma][epsilon],
                 loss_anglescan_fit2[sigma][epsilon]],
+            [loss_D_fit1_min[sigma][epsilon][N] 
+                for N in loss_D_fit1_min[sigma][epsilon]] + 
+                [loss_D_fit2_min[sigma][epsilon][N] 
+                for N in loss_D_fit2_min[sigma][epsilon]] +
+                [loss_anglescan_fit1_min[sigma][epsilon],
+                loss_anglescan_fit2_min[sigma][epsilon]],
+            [loss_D_fit1_max[sigma][epsilon][N] 
+                for N in loss_D_fit1_max[sigma][epsilon]] + 
+                [loss_D_fit2_max[sigma][epsilon][N] 
+                for N in loss_D_fit2_max[sigma][epsilon]] +
+                [loss_anglescan_fit1_max[sigma][epsilon],
+                loss_anglescan_fit2_max[sigma][epsilon]],
             [loss_D_fit1_err[sigma][epsilon][N] 
                 for N in loss_D_fit1_err[sigma][epsilon]] + 
                 [loss_D_fit2_err[sigma][epsilon][N] 
@@ -1006,6 +1108,36 @@ for label in lhc_data:
         best_fit_lhc2_label[i] = best_fit_lhc2_correction
     fit_lhc2[label] = fit_lhc2_label
     best_fit_lhc2[label] = best_fit_lhc2_label
+
+#%%
+print("Compute FIT1 Final Version")
+
+# Search parameters
+k_lim = 0.1
+dk = 0.0001
+k_bound = 10000
+
+best_fit_lhc1 = {}
+
+for label in lhc_data:
+    best_fit_lhc1_label = {}
+    for i in lhc_data[label]:
+        j = 0
+        print(label, i)
+        best_fit_lhc1_correction = []
+        for seed in lhc_data[label][i]:
+            print(j)
+            j += 1
+            # FIT1
+            best_fit_lhc1_correction.append(
+                                non_linear_fit1_final(seed,
+                                                sigma_filler(seed, 0.05),
+                                                np.asarray(sorted(seed.keys())),
+                                                k_lim,
+                                                dk,
+                                                k_bound))
+        best_fit_lhc1_label[i] = best_fit_lhc1_correction
+    best_fit_lhc1[label] = best_fit_lhc1_label
 
 #%%
 print("Compute FIT2 Final Version")
@@ -1230,24 +1362,24 @@ print("reverse engeneering D from intensity")
 nek_D = {}
 for label in nek_data:
     nek_D[label] = (nek_data[label][0],
-                    relative_intensity_D_law(nek_data[label][1], 1)) 
+                    D_from_loss(nek_data[label][1], 1)) 
 
 #%%
 print("fit1")
 
 # Search parameters
-k_max = 7.
-k_min = -10.
-dk = 0.02
+k_lim = 0.1
+dk = 0.0001
+k_bound = 10000
 
 nek_fit1 = {}
 for label in nek_D:
     print(label)
-    nek_fit1[label] = select_best_fit1(non_linear_fit1(
+    nek_fit1[label] = non_linear_fit1_final(
                             dict(zip(nek_D[label][0], nek_D[label][1])),
-                            dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)),
+                            dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
                             nek_D[label][0],
-                            k_min, k_max, dk))
+                            k_lim, dk, k_bound)
 
 #%%
 print("fit2")
@@ -1262,7 +1394,7 @@ for label in nek_D:
     print(label)
     nek_fit2[label] = non_linear_fit2_final(
             dict(zip(nek_D[label][0], nek_D[label][1])),
-            dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)),
+            dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
             nek_D[label][0],
             a_min, a_max, da, a_bound)
     
@@ -1273,11 +1405,11 @@ for label in nek_fit1:
     plot_fit_nek1(nek_fit1[label], label, 
                   nek_D[label][0],
                   dict(zip(nek_D[label][0], nek_D[label][1])),
-                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)))
-    plot_fit_nek1(nek_fit2[label], label, 
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)))
+    plot_fit_nek2(nek_fit2[label], label, 
                   nek_D[label][0],
                   dict(zip(nek_D[label][0], nek_D[label][1])),
-                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.01)))
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)))
 
 #%%
 from png_to_jpg import *

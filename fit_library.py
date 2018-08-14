@@ -45,7 +45,7 @@ n_turns = np.array([
 partition_lists = [
     [0, np.pi / 2],  # Always always keep this one
     [0, np.pi / 4, np.pi / 2],
-    [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
+    #[0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
     [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]
     # [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
     # [
@@ -155,15 +155,19 @@ def FIT1(x, D_inf, B, k):
 
 
 def FIT1_error_max(x, D_inf, D_inf_err, B, B_err, k, k_err):
-    if B > 0 and k > 0:
-        return FIT1(x, D_inf + D_inf_err, B + B_err, k - k_err)
-    return FIT1(x, D_inf - D_inf_err, B + B_err, k + k_err)
-
+    #print(D_inf, D_inf_err, B, B_err, k, k_err)
+    return max([FIT1(x, D_inf + D_inf_err, B + B_err, k + k_err),
+                FIT1(x, D_inf + D_inf_err, B + B_err, k - k_err),
+                FIT1(x, D_inf + D_inf_err, B - B_err, k + k_err),
+                FIT1(x, D_inf + D_inf_err, B - B_err, k - k_err)])
+   
 
 def FIT1_error_min(x, D_inf, D_inf_err, B, B_err, k, k_err):
-    if B > 0 and k > 0:
-        return FIT1(x, D_inf - D_inf_err, B - B_err, k + k_err)
-    return FIT1(x, D_inf + D_inf_err, B - B_err, k - k_err)
+    #print(D_inf, D_inf_err, B, B_err, k, k_err)
+    return min([FIT1(x, D_inf - D_inf_err, B + B_err, k + k_err),
+                FIT1(x, D_inf - D_inf_err, B + B_err, k - k_err),
+                FIT1(x, D_inf - D_inf_err, B - B_err, k + k_err),
+                FIT1(x, D_inf - D_inf_err, B - B_err, k - k_err)])
 
 
 def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
@@ -195,6 +199,37 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
                 print("Runtime Error at k = {}".format(k))
     assert len(explore_k) > 0
     return explore_k
+
+
+def non_linear_fit1_final(data, err_data, n_turns,
+                          k_lim, dk, k_bound, p0D=0, p0B=0):
+    scale_search = 1.
+    print(scale_search)
+    best_fit = select_best_fit1(non_linear_fit1(
+        data, err_data, n_turns,
+        -k_lim, k_lim, dk, p0D, p0B))
+    # is upper bound
+    if best_fit[4] > k_lim - dk:
+        while (best_fit[4] > (k_lim - dk) * scale_search and
+               scale_search < k_bound):
+            scale_search *= 10.
+            print(scale_search)
+            best_fit = select_best_fit1(non_linear_fit1(
+                data, err_data, n_turns, -k_lim,
+                k_lim * scale_search, dk * scale_search,
+                p0D, p0B))
+    # is lower bound
+    elif best_fit[4] < -k_lim + dk:
+        while (best_fit[4] < (-k_lim + dk) * scale_search and
+               scale_search < k_bound):
+            scale_search *= 10.
+            print(scale_search)
+            best_fit = select_best_fit1(non_linear_fit1(
+                data, err_data, n_turns,
+                -k_lim * scale_search, k_lim,
+                dk * scale_search, p0D, p0B))
+    return best_fit
+
 
 def non_linear_fit1_naive(data, err_data, n_turns, p0D=0, p0B=0, p0k=0):
     try:
@@ -1175,6 +1210,8 @@ def radscan_intensity(grid, dx=dx):
 
 def single_partition_intensity(best_fit_params, pass_par_func, time, sigma):
     current_dynamic_aperture = pass_par_func(time, best_fit_params)
+    #print(best_fit_params)
+    #print(current_dynamic_aperture)
     return relative_intensity_D_law(current_dynamic_aperture, sigma)
 
 
@@ -1240,24 +1277,31 @@ def plot_losses(title, filename,
                 n_turns, data_list=[], data_label_list=[],
                 param_list=[], param_list_min=[], param_list_max=[],
                 param_error_list=[], param_label_list=[]):
+    colors = ['C0','C1','C2','C3','C4','C5','C6','C7','C8','C9']
+    j = 0
     for i in range(len(data_list)):
         plt.plot(
             n_turns,
             data_list[i][1:],
             linewidth=0.5,
-            label=data_label_list[i])
+            label=data_label_list[i],
+            color=colors[j])
+        j += 1
     for i in range(len(param_list)):
         plt.errorbar(
             n_turns,
             param_list[i][1:],
             yerr=param_error_list[i][1:],
             linewidth=0.5,
-            label=param_label_list[i])
+            label=param_label_list[i],
+            color=colors[j])
         plt.fill_between(
             n_turns,
             param_list_min[i][1:],
             param_list_max[i][1:],
-            interpolate=True, alpha=0.5)
+            interpolate=True, alpha=0.5,
+            color=colors[j])
+        j += 1
     plt.title(title)
     plt.xlabel("N turns")
     plt.xscale("log")
@@ -1665,7 +1709,7 @@ def plot_fit_nek1(fit_params, label, n_turns, dynamic_aperture,
         label='$y=D_\infty={:.2}$'.format(fit_params[0]))
     plt.xlabel("$N$ turns")
     plt.xscale("log")
-    plt.ylabel("$D (A.U.)$")
+    plt.ylabel("$D (Sigma Units)$")
     #plt.ylim(0., 1.)
     plt.title(
         "FIT1, label $= {}$".format(label))
@@ -1713,7 +1757,7 @@ def plot_fit_nek2(fit_params, label, n_turns, dynamic_aperture,
             fit_params[4], np.exp(fit_params[2]), fit_params[0]))
     plt.xlabel("$N$ turns")
     plt.xscale("log")
-    plt.ylabel("$D (A.U.)$")
+    plt.ylabel("$D (Sigma Units)$")
     #plt.ylim(0., 1.)
     plt.title(
         "FIT2, label $ = {}$".format(label))
