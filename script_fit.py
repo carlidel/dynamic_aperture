@@ -186,82 +186,6 @@ for epsilon in dynamic_aperture:
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
 
 #%%
-
-dA = 0.001
-A_max = 0.1
-A_min = 0.00
-shift = - np.log(n_turns[0]) + dA
-    
-
-print("Fit on Partitions2v1")
-
-fit_parameters2_v1 = {}
-best_fit_parameters2_v1 = {}
-
-for epsilon in dynamic_aperture:
-    print(epsilon)
-    # fit2
-    fit_parameters_epsilon = {}
-    best_fit_parameters_epsilon = {}
-
-    for partition_list in partition_lists:
-        fit = {}
-        best = {}
-        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
-            scale_search = 1.
-            print(scale_search)
-            fit[angle] = non_linear_fit2_v1(
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                n_turns,
-                A_min + shift,
-                A_max + shift,
-                dA)
-            best[angle] = select_best_fit2_v1(fit[angle])
-            ### Is this a naive minimum in the chi squared?
-            while (best[angle][4] >= A_max * scale_search - dA * scale_search +
-                   shift and scale_search <= 1e30):
-                print("Minimum naive! Increase scale_search!")
-                A_min_new = A_max * scale_search
-                scale_search *= 10.
-                if scale_search > 1e30:
-                    print("Maximum scale reached! This will be the last fit.")
-                print(scale_search)
-                fit[angle] = non_linear_fit2_v1(
-                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
-                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                    n_turns,
-                    A_min + shift,
-                    A_max * scale_search + shift,
-                    dA * scale_search)
-                best[angle] = select_best_fit2_v1(fit[angle])
-        fit_parameters_epsilon[len(partition_list) - 1] = fit
-        best_fit_parameters_epsilon[len(partition_list) - 1] = best
-
-    fit_parameters2_v1[epsilon] = fit_parameters_epsilon
-    best_fit_parameters2_v1[epsilon] = best_fit_parameters_epsilon
-
-#%%
-print("Fit naive on simulation 2. (in order to test it!)")
-
-best_fit_parameters2 = {}
-for epsilon in dynamic_aperture:
-    print(epsilon)
-    # fit2
-    best_fit_parameters_epsilon = {}
-
-    for partition_list in partition_lists:
-        best = {}
-        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
-            best[angle] = non_linear_fit2_naive(
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                n_turns,
-                0.1, 10., 10.1)
-        best_fit_parameters_epsilon[len(partition_list) - 1] = best
-    best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
-
-#%%
 print("Plot fits from simulation 1.")
 for epsilon in best_fit_parameters1:
     #for n_angles in best_fit_parameters1[epsilon]:
@@ -279,15 +203,6 @@ for epsilon in best_fit_parameters2:
                         dynamic_aperture)
 
 #%%
-print("Plot fits from simulation 2 v1.")
-for epsilon in best_fit_parameters2_v1:
-    #for n_angles in best_fit_parameters1[epsilon]:
-    for angle in best_fit_parameters2_v1[epsilon][1]:
-        plot_fit_basic2_v1(best_fit_parameters2_v1[epsilon][1][angle],
-                           1, epsilon, angle, n_turns,
-                           dynamic_aperture)
-
-#%%
 print("Compare chi squared fits1.")
 for epsilon in fit_parameters1:
     for angle in fit_parameters1[epsilon][1]:
@@ -301,15 +216,6 @@ print("Compare chi squared fits2.")
 for epsilon in fit_parameters2:
     for angle in fit_parameters2[epsilon][1]:
         plot_chi_squared2(fit_parameters2[epsilon][1][angle],
-                          epsilon[2],
-                          1,
-                          angle)
-
-#%%
-print("Compare chi squared fits2 v1.")
-for epsilon in fit_parameters2_v1:
-    for angle in fit_parameters2_v1[epsilon][1]:
-        plot_chi_squared2_v1(fit_parameters2_v1[epsilon][1][angle],
                           epsilon[2],
                           1,
                           angle)
@@ -339,15 +245,6 @@ for N in best_fit_parameters2[temp]:
                   "img/fit/f2param_eps_A_N{}_ang{:2.2f}.png".format(N, angle),
                   "img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".format(N, angle),
                   "img/fit/f2param_eps_k_N{}_ang{:2.2f}.png".format(N, angle))
-
-#%%
-print("test numerical accuracy")
-temp = list(best_fit_parameters2.keys())[0]
-for N in best_fit_parameters2[temp]:
-    for angle in (best_fit_parameters2[temp][N]):
-        fit_params_over_epsilon_2and2v1(best_fit_parameters2,
-                                        best_fit_parameters2_v1,
-                                        N, angle)
 
 #%%
 print("Parameters over partitions")
