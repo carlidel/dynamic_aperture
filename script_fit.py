@@ -165,6 +165,7 @@ da = 0.0001
 a_max = 0.01
 a_min = 0.001 + da ### under this value it doesn't converge
 a_bound = 1e10
+a_default = n_turns[-1]
 
 best_fit_parameters2 = {}
 
@@ -180,7 +181,7 @@ for epsilon in dynamic_aperture:
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
                 n_turns,
-                a_min, a_max, da, a_bound)
+                a_min, a_max, da, a_bound, a_default)
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
 
@@ -590,6 +591,7 @@ da = 0.0001
 a_max = 0.01
 a_min = 0.001 + da ### under this value it doesn't converge
 a_bound = 1e20
+a_default = n_turns[-1]
 
 fit_precise_loss1 = {}
 fit_precise_loss2 = {}
@@ -614,7 +616,7 @@ for sigma in loss_precise:
                 dict(zip(n_turns,
                          processed_data_precise[sigma][epsilon] * 0.01)),
                 n_turns,
-                a_min, a_max, da, a_bound)
+                a_min, a_max, da, a_bound, a_default)
     fit_precise_loss1[sigma] = fit_sigma_temp1
     fit_precise_loss2[sigma] = fit_sigma_temp2
 
@@ -630,6 +632,7 @@ da = 0.0001
 a_max = 0.01
 a_min = 0.001 + da ### under this value it doesn't converge
 a_bound = 1e20
+a_default = n_turns[-1]
 
 fit_anglescan_loss1 = {}
 fit_anglescan_loss2 = {}
@@ -655,7 +658,7 @@ for sigma in loss_anglescan:
                 dict(zip(n_turns,
                          processed_data_precise[sigma][epsilon] * 0.01)),
                 n_turns,
-                a_min, a_max, da, a_bound)
+                a_min, a_max, da, a_bound, a_default)
     fit_anglescan_loss1[sigma] = fit_sigma_temp1
     fit_anglescan_loss2[sigma] = fit_sigma_temp2
 
@@ -1158,11 +1161,12 @@ for label in lhc_data:
         for seed in lhc_data[label][i]:
             print(j)
             j += 1
+            a_default = np.asarray(sorted(seed.keys()))[-1]
             best_fit_lhc2_correction.append(
                 non_linear_fit2_final(seed,
                                       sigma_filler(seed, 0.05),
                                       np.asarray(sorted(seed.keys())),
-                                      a_min, a_max, da, a_bound))
+                                      a_min, a_max, da, a_bound, a_default))
         best_fit_lhc2_label[i] = best_fit_lhc2_correction
     best_fit_lhc2[label] = best_fit_lhc2_label
 
@@ -1382,6 +1386,16 @@ for label in nek_D:
                             k_lim, dk, k_bound)
 
 #%%
+print("plot the things1")
+
+for label in nek_fit1:
+    plot_fit_nek1(nek_fit1[label], label, 
+                  nek_D[label][0],
+                  dict(zip(nek_D[label][0], nek_D[label][1])),
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)))
+
+
+#%%
 print("fit2")
 
 da = 0.0001
@@ -1392,24 +1406,44 @@ a_bound = 1e20
 nek_fit2 = {}
 for label in nek_D:
     print(label)
+    a_default = nek_D[label][0][-1]
     nek_fit2[label] = non_linear_fit2_final(
             dict(zip(nek_D[label][0], nek_D[label][1])),
             dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
             nek_D[label][0],
-            a_min, a_max, da, a_bound)
+            a_min, a_max, da, a_bound, a_default)
     
 #%%
-print("plot the things")
+print("plot the things2")
 
-for label in nek_fit1:
-    plot_fit_nek1(nek_fit1[label], label, 
-                  nek_D[label][0],
-                  dict(zip(nek_D[label][0], nek_D[label][1])),
-                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)))
+for label in nek_fit2:
     plot_fit_nek2(nek_fit2[label], label, 
                   nek_D[label][0],
                   dict(zip(nek_D[label][0], nek_D[label][1])),
-                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)))
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
+                  imgpath="img/nek/fit2_standard_")
+    
+#%%
+print("what if... fit2")
+
+nek_fit2 = {}
+for label in nek_D:
+    print(label)
+    nek_fit2[label] = non_linear_fit2_fixedk(
+            dict(zip(nek_D[label][0], nek_D[label][1])),
+            dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
+            nek_D[label][0],
+            100000000, 100000000)
+
+#%%
+print("plot the things2")
+
+for label in nek_fit2:
+    plot_fit_nek2(nek_fit2[label], label, 
+                  nek_D[label][0],
+                  dict(zip(nek_D[label][0], nek_D[label][1])),
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
+                  imgpath="img/nek/fit2_fixedk_")
 
 #%%
 from png_to_jpg import *

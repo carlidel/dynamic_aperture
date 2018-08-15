@@ -361,7 +361,7 @@ def non_linear_fit2(data, err_data, n_turns, a_min, a_max, da, p0k=0, p0B=0):
 
 
 def non_linear_fit2_final(data, err_data, n_turns,
-                          a_min, a_max, da, a_bound, p0k=0, p0B=0):
+                          a_min, a_max, da, a_bound, a_default, p0k=0, p0B=0):
     scale_search = 1
     print(scale_search)
     best_fit = select_best_fit2(non_linear_fit2(data, err_data, n_turns,
@@ -372,9 +372,10 @@ def non_linear_fit2_final(data, err_data, n_turns,
         scale_search *= 10
         print(scale_search)
         if scale_search > a_bound:
-            print("Set a = 1!")
+            print("Set a = {}".format(a_default))
             return non_linear_fit2_fixed_a(data, err_data, n_turns,
-                                           1., 0.1, p0k, p0B)
+                                           a_default, 0.,
+                                           p0k, p0B)
         best_fit = select_best_fit2(non_linear_fit2(data, err_data, n_turns,
                                                     a_min, a_max * scale_search,
                                                     da * scale_search,
@@ -404,6 +405,37 @@ def non_linear_fit2_naive(data, err_data, n_turns, p0k=0, p0B=0, p0a=0):
                 np.sqrt(pcov[1][1]),
                 popt[2],
                 np.sqrt(pcov[2][2]))
+    except RuntimeError:
+        print("FAIL")
+        return(0.,0.,0.,0.,0.,0.)
+
+
+def non_linear_fit2_fixedk(data, err_data, n_turns, p0B=0, p0a=1):
+    #fit2 = lambda x, B, a: B - 0.33 * np.log(np.log(x*a))
+    fit2 = lambda x, b, a: b / np.power(np.log(x*a), 0.33)
+    working_data = {}
+    working_err_data = {}
+    # Preprocessing the data
+    # for label in data:
+    #     working_data[label] = np.log(np.copy(data[label]))
+    #     working_err_data[label] = ((1 / np.copy(data[label])) *
+    #                                         np.copy(err_data[label]))
+    try:
+        popt, pcov = curve_fit(fit2,
+                               n_turns,
+                               #[working_data[i] for i in n_turns],
+                               [data[i] for i in n_turns],
+                               p0=[p0B, p0a],
+                               #sigma=[working_err_data[i] for i in n_turns],
+                               sigma=[err_data[i] for i in n_turns],
+                               bounds=([-np.inf, 0],
+                                       [np.inf, np.inf]))
+        return (0.33,
+                0.,
+                np.log(popt[0]),
+                (1/popt[0]) * np.sqrt(pcov[0][0]),
+                popt[1],
+                np.sqrt(pcov[1][1]))
     except RuntimeError:
         print("FAIL")
         return(0.,0.,0.,0.,0.,0.)
@@ -1688,7 +1720,7 @@ def combine_image_3x3(imgname, path1, path2="none", path3="none", path4="none",
 
 
 def plot_fit_nek1(fit_params, label, n_turns, dynamic_aperture,
-                  dynamic_aperture_err, imgpath="img/nek/fit1"):
+                  dynamic_aperture_err, imgpath="img/nek/fit1", logscale=False):
     plt.errorbar(
         n_turns, [dynamic_aperture[i] for i in n_turns],
         yerr=[dynamic_aperture_err[i] for i in n_turns],
@@ -1708,7 +1740,8 @@ def plot_fit_nek1(fit_params, label, n_turns, dynamic_aperture,
         linestyle='-',
         label='$y=D_\infty={:.2}$'.format(fit_params[0]))
     plt.xlabel("$N$ turns")
-    plt.xscale("log")
+    if logscale:
+        plt.xscale("log")
     plt.ylabel("$D (Sigma Units)$")
     #plt.ylim(0., 1.)
     plt.title(
@@ -1741,7 +1774,7 @@ def plot_fit_nek1(fit_params, label, n_turns, dynamic_aperture,
 
 
 def plot_fit_nek2(fit_params, label, n_turns, dynamic_aperture,
-                  dynamic_aperture_err, imgpath="img/nek/fit2"):
+                  dynamic_aperture_err, imgpath="img/nek/fit2", logscale=False):
     plt.errorbar(
         n_turns, [dynamic_aperture[i] for i in n_turns],
         yerr=[dynamic_aperture_err[i] for i in n_turns],
@@ -1756,7 +1789,8 @@ def plot_fit_nek2(fit_params, label, n_turns, dynamic_aperture,
         label='fit: $a={:.2}, b={:.2}, k={:.2}$'.format(
             fit_params[4], np.exp(fit_params[2]), fit_params[0]))
     plt.xlabel("$N$ turns")
-    plt.xscale("log")
+    if logscale:
+        plt.xscale("log")
     plt.ylabel("$D (Sigma Units)$")
     #plt.ylim(0., 1.)
     plt.title(
