@@ -309,7 +309,7 @@ def FIT2_linearized_err_min(x, k, k_err, B, B_err, a, a_err):
 
 
 def non_linear_fit2_fixed_a(data, err_data, n_turns, a, da, p0k=0, p0B=0):
-    fit2 = lambda x, k, B: B - k * np.log(np.log(a * x))
+    fit2 = lambda x, k, B: B - k * np.log(np.log(float(a) * x))
     working_data = {}
     working_err_data = {}
     # Preprocessing the data
@@ -1035,7 +1035,7 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
             for x in sorted(fit_params_dict)],
         yerr=[fit_params_dict[x][n_partitions][angle][1] 
             for x in sorted(fit_params_dict)],
-        linewidth=0,
+        linewidth=0.5,
         elinewidth=0.5,
         marker="x",
         markersize=1)
@@ -1054,7 +1054,7 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
             for x in sorted(fit_params_dict)],
         yerr=[fit_params_dict[x][n_partitions][angle][3] 
             for x in sorted(fit_params_dict)],
-        linewidth=0,
+        linewidth=0.5,
         elinewidth=0.5,
         marker="x",
         markersize=1)
@@ -1073,7 +1073,7 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
             for x in sorted(fit_params_dict)],
         yerr=[fit_params_dict[x][n_partitions][angle][5] 
             for x in sorted(fit_params_dict)],
-        linewidth=0,
+        linewidth=0.5,
         elinewidth=0.5,
         marker="x",
         markersize=1)
@@ -1095,7 +1095,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
             for x in sorted(fit_params_dict)],
         yerr=[fit_params_dict[x][n_partitions][angle][1] 
             for x in sorted(fit_params_dict)],
-        linewidth=0,
+        linewidth=0.5,
         elinewidth=0.5,
         marker="x",
         markersize=1)
@@ -1114,7 +1114,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
             for x in sorted(fit_params_dict)],
         yerr=[fit_params_dict[x][n_partitions][angle][3] 
             for x in sorted(fit_params_dict)],
-        linewidth=0,
+        linewidth=0.5,
         elinewidth=0.5,
         marker="x",
         markersize=1)
@@ -1133,7 +1133,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
             for x in sorted(fit_params_dict)],
         yerr=[fit_params_dict[x][n_partitions][angle][5] 
             for x in sorted(fit_params_dict)],
-        linewidth=0,
+        linewidth=0.5,
         elinewidth=0.5,
         marker="x",
         markersize=1)
@@ -1717,6 +1717,29 @@ def combine_image_3x3(imgname, path1, path2="none", path3="none", path4="none",
     row3 = np.concatenate((img7, img8, img9), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
     cv2.imwrite(imgname, image)
+
+
+def combine_image_6x2(imgname, path1, path2="none", path3="none", path4="none",
+                    path5="none", path6="none", path7="none", path8="none",
+                    path9="none", path10="none", path11="none", path12="none"):
+    img1 = cv2.imread(path1)
+    filler = np.zeros(img1.shape)
+    img2 = cv2.imread(path2) if path2 is not "none" else filler
+    img3 = cv2.imread(path3) if path3 is not "none" else filler
+    img4 = cv2.imread(path4) if path4 is not "none" else filler
+    img5 = cv2.imread(path5) if path5 is not "none" else filler
+    img6 = cv2.imread(path6) if path6 is not "none" else filler
+    img7 = cv2.imread(path7) if path7 is not "none" else filler
+    img8 = cv2.imread(path8) if path8 is not "none" else filler
+    img9 = cv2.imread(path9) if path9 is not "none" else filler
+    img10 = cv2.imread(path10) if path9 is not "none" else filler
+    img11 = cv2.imread(path11) if path9 is not "none" else filler
+    img12 = cv2.imread(path12) if path9 is not "none" else filler
+    row1 = np.concatenate((img1, img2, img3, img4, img5, img6), axis=1)
+    row2 = np.concatenate((img7, img8, img9, img10, img11, img12), axis=1)
+    image = np.concatenate((row1, row2), axis=0)
+    cv2.imwrite(imgname, image)
+
 
 
 def plot_fit_nek1(fit_params, label, n_turns, dynamic_aperture,

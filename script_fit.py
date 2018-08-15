@@ -330,13 +330,15 @@ for N in best_fit_parameters2[temp]:
 
 #%%
 print("compose fit over epsilon.")
-combine_image_3x2("img/fit/params_over_epsilon.png",
-                  "img/fit/f1param_eps_D_N1_ang0.79.png",
-                  "img/fit/f1param_eps_b_N1_ang0.79.png",
-                  "img/fit/f1param_eps_k_N1_ang0.79.png",
-                  "img/fit/f2param_eps_A_N1_ang0.79.png",
-                  "img/fit/f2param_eps_B_N1_ang0.79.png",
-                  "img/fit/f2param_eps_k_N1_ang0.79.png")
+for N in best_fit_parameters2[temp]:
+    for angle in (best_fit_parameters2[temp][N]):
+        combine_image_3x2("img/fit/params_over_epsilon_N{}_ang{:2.2f}.png".format(N, angle),
+                  "img/fit/f1param_eps_D_N{}_ang{:2.2f}.png".format(N, angle),
+                  "img/fit/f1param_eps_b_N{}_ang{:2.2f}.png".format(N, angle),
+                  "img/fit/f1param_eps_k_N{}_ang{:2.2f}.png".format(N, angle),
+                  "img/fit/f2param_eps_A_N{}_ang{:2.2f}.png".format(N, angle),
+                  "img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".format(N, angle),
+                  "img/fit/f2param_eps_k_N{}_ang{:2.2f}.png".format(N, angle))
 
 #%%
 print("test numerical accuracy")
@@ -1422,7 +1424,12 @@ for label in nek_fit2:
                   dict(zip(nek_D[label][0], nek_D[label][1])),
                   dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
                   imgpath="img/nek/fit2_standard_")
-    
+    plot_fit_nek2(nek_fit2[label], label, 
+                  nek_D[label][0],
+                  dict(zip(nek_D[label][0], nek_D[label][1])),
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
+                  "img/nek/fit2_standard_log_", True)
+
 #%%
 print("what if... fit2")
 
@@ -1433,7 +1440,7 @@ for label in nek_D:
             dict(zip(nek_D[label][0], nek_D[label][1])),
             dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
             nek_D[label][0],
-            100000000, 100000000)
+            0, 100000000)
 
 #%%
 print("plot the things2")
@@ -1444,6 +1451,29 @@ for label in nek_fit2:
                   dict(zip(nek_D[label][0], nek_D[label][1])),
                   dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
                   imgpath="img/nek/fit2_fixedk_")
+    plot_fit_nek2(nek_fit2[label], label, 
+                  nek_D[label][0],
+                  dict(zip(nek_D[label][0], nek_D[label][1])),
+                  dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
+                  "img/nek/fit2_fixedk_log_", True)
+
+#%%
+print("combine!")
+combine_image_6x2("img/nek/combine_linear.png",
+    "img/nek/fit2_fixedk__label6a.png", "img/nek/fit2_fixedk__label6b.png",
+    "img/nek/fit2_fixedk__label7a.png", "img/nek/fit2_fixedk__label7b.png",
+    "img/nek/fit2_fixedk__label7c.png", "img/nek/fit2_fixedk__label7d.png",
+    "img/nek/fit2_standard__label6a.png", "img/nek/fit2_standard__label6b.png",
+    "img/nek/fit2_standard__label7a.png", "img/nek/fit2_standard__label7b.png",
+    "img/nek/fit2_standard__label7c.png", "img/nek/fit2_standard__label7d.png")
+
+combine_image_6x2("img/nek/combine_log.png",
+    "img/nek/fit2_fixedk_log__label6a.png", "img/nek/fit2_fixedk_log__label6b.png",
+    "img/nek/fit2_fixedk_log__label7a.png", "img/nek/fit2_fixedk_log__label7b.png",
+    "img/nek/fit2_fixedk_log__label7c.png", "img/nek/fit2_fixedk_log__label7d.png",
+    "img/nek/fit2_standard_log__label6a.png", "img/nek/fit2_standard_log__label6b.png",
+    "img/nek/fit2_standard_log__label7a.png", "img/nek/fit2_standard_log__label7b.png",
+    "img/nek/fit2_standard_log__label7c.png", "img/nek/fit2_standard_log__label7d.png")
 
 #%%
 from png_to_jpg import *
