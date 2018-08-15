@@ -109,10 +109,10 @@ for epsilon in dynamic_aperture:
 print("Fit1 Iterated")
 
 # Search parameters
-k_min = -10.
+k_min = -20.
 k_max = 7.
 dk = 0.1
-n_iterations = 6
+n_iterations = 7
 
 best_fit_parameters1 = {}
 
@@ -185,11 +185,11 @@ for epsilon in dynamic_aperture:
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
 
 #%%
-print("test final form of fit2.")
+print("final form of fit2.")
 
 da = 0.0001
 a_max = 0.01
-a_min = 0.001 + da ### under this value it doesn't converge
+a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
 a_bound = 1e10
 a_default = n_turns[-1]
 
@@ -237,6 +237,7 @@ for epsilon in best_fit_parameters1:
         plot_fit_basic1(best_fit_parameters1[epsilon][1][angle],
                         1, epsilon, angle, n_turns,
                         dynamic_aperture)
+
 #%%
 print("Plot fits from simulation 2.")
 for epsilon in best_fit_parameters2:
@@ -245,6 +246,7 @@ for epsilon in best_fit_parameters2:
         plot_fit_basic2(best_fit_parameters2[epsilon][1][angle],
                         1, epsilon, angle, n_turns,
                         dynamic_aperture)
+
 #%%
 print("Plot fits from simulation 2 fixed k.")
 for epsilon in best_fit_parameters2_fixedk:
@@ -299,7 +301,8 @@ for N in best_fit_parameters2_fixedk[temp]:
 print("compose fit over epsilon.")
 for N in best_fit_parameters2[temp]:
     for angle in (best_fit_parameters2[temp][N]):
-        combine_image_3x2("img/fit/params_over_epsilon_N{}_ang{:2.2f}.png".format(N, angle),
+        combine_image_3x2("img/fit/params_over_epsilon_N{}_ang{:2.2f}.png".
+            format(N, angle),
                   "img/fit/f1param_eps_D_N{}_ang{:2.2f}.png".format(N, angle),
                   "img/fit/f1param_eps_b_N{}_ang{:2.2f}.png".format(N, angle),
                   "img/fit/f1param_eps_k_N{}_ang{:2.2f}.png".format(N, angle),
@@ -311,7 +314,8 @@ for N in best_fit_parameters2[temp]:
 print("compose fit over epsilon.")
 for N in best_fit_parameters2[temp]:
     for angle in (best_fit_parameters2[temp][N]):
-        combine_image_3x2("img/fit/paramsFIT2_over_epsilon_N{}_ang{:2.2f}.png".format(N, angle),
+        combine_image_3x2("img/fit/paramsFIT2_over_epsilon_N{}_ang{:2.2f}.png".
+            format(N, angle),
           "img/fit/f2param_eps_fixedk_A_N{}_ang{:2.2f}.png".format(N, angle),
           "img/fit/f2param_eps_fixedk_B_N{}_ang{:2.2f}.png".format(N, angle),
           "img/fit/f2param_eps_fixedk_k_N{}_ang{:2.2f}.png".format(N, angle),
@@ -555,14 +559,15 @@ for sigma in loss_precise:
 print("Fit on precise loss.")
 
 # Search parameters
-k_lim = 0.1
-dk = 0.0001
-k_bound = 10000
+k_min = -20.
+k_max = 7.
+dk = 0.1
+n_iterations = 7
 
 da = 0.0001
 a_max = 0.01
-a_min = 0.001 + da ### under this value it doesn't converge
-a_bound = 1e20
+a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
+a_bound = 1e10
 a_default = n_turns[-1]
 
 fit_precise_loss1 = {}
@@ -573,15 +578,14 @@ for sigma in loss_precise:
     fit_sigma_temp1 = {}
     fit_sigma_temp2 = {}
     for epsilon in loss_precise[sigma]:
-        fit_sigma_temp1[epsilon] = non_linear_fit1_final(
+        fit_sigma_temp1[epsilon] = non_linear_fit1_iterated(
                 dict(zip(n_turns,
                     processed_data_precise[sigma][epsilon])),
                 dict(zip(n_turns,
                     processed_data_precise[sigma][epsilon] * 0.01)),
                 n_turns,
-                k_lim,
-                dk,
-                k_bound)
+                k_min, k_max, dk, n_iterations)
+                
         fit_sigma_temp2[epsilon] = non_linear_fit2_final(
                 dict(zip(n_turns,
                          processed_data_precise[sigma][epsilon])),
@@ -596,14 +600,15 @@ for sigma in loss_precise:
 print("Fit on anglescan loss")
 
 # Search parameters
-k_lim = 0.1
-dk = 0.0001
-k_bound = 10000
+k_min = -20.
+k_max = 7.
+dk = 0.1
+n_iterations = 7
 
 da = 0.0001
 a_max = 0.01
-a_min = 0.001 + da ### under this value it doesn't converge
-a_bound = 1e20
+a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
+a_bound = 1e10
 a_default = n_turns[-1]
 
 fit_anglescan_loss1 = {}
@@ -617,13 +622,13 @@ for sigma in loss_anglescan:
         processed_data = D_from_loss(
             np.copy(loss_anglescan[sigma][epsilon][1:]),
             sigma)
-        fit_sigma_temp1[epsilon] = non_linear_fit1_final(
+        fit_sigma_temp1[epsilon] = non_linear_fit1_iterated(
                 dict(zip(n_turns,
                     processed_data_anglescan[sigma][epsilon])),
                 dict(zip(n_turns,
                     processed_data_anglescan[sigma][epsilon] * 0.01)),
                 n_turns,
-                k_lim, dk, k_bound)
+                k_min, k_max, dk, n_iterations)
         fit_sigma_temp2[epsilon] = non_linear_fit2_final(
                 dict(zip(n_turns,
                          processed_data_precise[sigma][epsilon])),
@@ -986,16 +991,6 @@ import matplotlib.pyplot as plt
 from fit_library import *
 
 #%%
-# Search parameters
-k_max = 7.
-k_min = -10.
-dk = 0.02
-
-dA = 0.0001
-A_max = 0.01
-A_min = 0.001 ### under this value it doesn't converge
-
-#%%
 print("LHC data.")
 lhc_data = pickle.load(open("LHC_DATA.pkl", "rb"))
 lhc_data = remove_first_times_lhc(lhc_data, 1000)
@@ -1088,9 +1083,10 @@ for label in lhc_data:
 print("Compute FIT1 Final Version")
 
 # Search parameters
-k_lim = 0.1
-dk = 0.0001
-k_bound = 10000
+k_min = -20.
+k_max = 7.
+dk = 0.1
+n_iterations = 7
 
 best_fit_lhc1 = {}
 
@@ -1105,21 +1101,19 @@ for label in lhc_data:
             j += 1
             # FIT1
             best_fit_lhc1_correction.append(
-                                non_linear_fit1_final(seed,
+                                non_linear_fit1_iterated(seed,
                                                 sigma_filler(seed, 0.05),
                                                 np.asarray(sorted(seed.keys())),
-                                                k_lim,
-                                                dk,
-                                                k_bound))
+                                                k_min, k_max,
+                                                dk, n_iterations))
         best_fit_lhc1_label[i] = best_fit_lhc1_correction
     best_fit_lhc1[label] = best_fit_lhc1_label
 
 #%%
 print("Compute FIT2 Final Version")
 
-da = 0.0001
-a_max = 0.01
-a_min = 0.001 + da ### under this value it doesn't converge
+da = 0.001
+a_max = 0.1
 a_bound = 1e10
 
 best_fit_lhc2 = {}
@@ -1134,6 +1128,7 @@ for label in lhc_data:
             print(j)
             j += 1
             a_default = np.asarray(sorted(seed.keys()))[-1]
+            a_min = (1/np.asarray(sorted(seed.keys()))[0]) + da
             best_fit_lhc2_correction.append(
                 non_linear_fit2_final(seed,
                                       sigma_filler(seed, 0.05),
@@ -1205,9 +1200,9 @@ for label in best_fit_lhc1:
         print(label, kind)
         best_fit_seed_distrib1(best_fit_lhc1[label][kind], label + kind + "f1")
         lhc_2param_comparison1(best_fit_lhc1[label][kind], label + kind + "f1")
-        lhc_plot_chi_squared1(fit_lhc1[label][kind], label, kind,
-                              fit1_lhc_pos[label][kind],
-                              fit2_lhc_bound[label][kind])
+        #lhc_plot_chi_squared1(fit_lhc1[label][kind], label, kind,
+        #                      fit1_lhc_pos[label][kind],
+        #                      fit2_lhc_bound[label][kind])
 #%%
 print("lhc best fit distribution2")
 
@@ -1216,9 +1211,9 @@ for label in best_fit_lhc2:
         print(label, kind)
         best_fit_seed_distrib2(best_fit_lhc2[label][kind], label + kind + "f2")
         lhc_2param_comparison2(best_fit_lhc2[label][kind], label + kind + "f2")
-        lhc_plot_chi_squared2(fit_lhc2[label][kind], label, kind,
-                              fit1_lhc_pos[label][kind],
-                              fit2_lhc_bound[label][kind])
+        #lhc_plot_chi_squared2(fit_lhc2[label][kind], label, kind,
+        #                      fit1_lhc_pos[label][kind],
+        #                      fit2_lhc_bound[label][kind])
 
 #%%
 for label in best_fit_lhc2:
@@ -1260,18 +1255,19 @@ for label in nek_data:
 print("fit1")
 
 # Search parameters
-k_lim = 0.1
-dk = 0.0001
-k_bound = 10000
+k_min = -20.
+k_max = 7.
+dk = 0.1
+n_iterations = 7
 
 nek_fit1 = {}
 for label in nek_D:
     print(label)
-    nek_fit1[label] = non_linear_fit1_final(
+    nek_fit1[label] = non_linear_fit1_iterated(
                             dict(zip(nek_D[label][0], nek_D[label][1])),
                             dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
                             nek_D[label][0],
-                            k_lim, dk, k_bound)
+                            k_min, k_max, dk, n_iterations)
 
 #%%
 print("plot the things1")

@@ -344,7 +344,7 @@ def non_linear_fit2_final(data, err_data, n_turns,
         if scale_search > a_bound:
             print("Set a = {}".format(a_default))
             return non_linear_fit2_fixed_a(data, err_data, n_turns,
-                                           a_default, 0.,
+                                           float(a_default), 0.,
                                            p0k, p0B)
         best_fit = select_best_fit2(non_linear_fit2(data, err_data, n_turns,
                                                     a_min, a_max * scale_search,
@@ -1282,7 +1282,7 @@ def combine_plots_lhc1(folder, kind):
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((filler, img1, img8), axis=1)
+    row1 = np.concatenate((filler, img1, filler), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
@@ -1301,7 +1301,7 @@ def combine_plots_lhc2(folder, kind):
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((img9, img1, filler), axis=1)
+    row1 = np.concatenate((filler, img1, filler), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
@@ -1319,7 +1319,7 @@ def combine_plots_lhc3(folder, kind):
     img8 = cv2.imread("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png")
     img9 = cv2.imread("img/lhc/lhc_" + folder + kind + "f1" + "_chisquared.png")
     filler = np.zeros(img1.shape)
-    row1 = np.concatenate((img9, img1, filler), axis=1)
+    row1 = np.concatenate((filler, img1, filler), axis=1)
     row2 = np.concatenate((img2, img3, img4), axis=1)
     row3 = np.concatenate((img5, img6, img7), axis=1)
     image = np.concatenate((row1, row2, row3), axis=0)
