@@ -105,6 +105,32 @@ for epsilon in dynamic_aperture:
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
     best_fit_parameters1[epsilon] = best_fit_parameters_epsilon
 
+#%%
+print("Fit1 Iterated")
+
+# Search parameters
+k_min = -10.
+k_max = 7.
+dk = 0.1
+n_iterations = 6
+
+best_fit_parameters1 = {}
+
+for epsilon in dynamic_aperture:
+    print(epsilon)
+    # fit1
+    best_fit_parameters_epsilon = {}
+
+    for partition_list in partition_lists:
+        best = {}
+        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+            best[angle] = non_linear_fit1_iterated(
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                n_turns, k_min, k_max, dk, n_iterations)
+        best_fit_parameters_epsilon[len(partition_list) - 1] = best
+    best_fit_parameters1[epsilon] = best_fit_parameters_epsilon
+
 
 #%%
 print("Fit on Partitions2")
@@ -171,7 +197,6 @@ best_fit_parameters2 = {}
 
 for epsilon in dynamic_aperture:
     print(epsilon)
-    # fit2
     best_fit_parameters_epsilon = {}
 
     for partition_list in partition_lists:
@@ -184,6 +209,25 @@ for epsilon in dynamic_aperture:
                 a_min, a_max, da, a_bound, a_default)
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
+
+#%%
+print("fixed k fit2.")
+
+best_fit_parameters2_fixedk = {}
+
+for epsilon in dynamic_aperture:
+    print(epsilon)
+    best_fit_parameters_epsilon = {}
+    
+    for partition_list in partition_lists:
+        best = {}
+        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+            best[angle] = non_linear_fit2_fixedk(
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                n_turns)
+        best_fit_parameters_epsilon[len(partition_list) - 1] = best
+    best_fit_parameters2_fixedk[epsilon] = best_fit_parameters_epsilon
 
 #%%
 print("Plot fits from simulation 1.")
@@ -201,6 +245,15 @@ for epsilon in best_fit_parameters2:
         plot_fit_basic2(best_fit_parameters2[epsilon][1][angle],
                         1, epsilon, angle, n_turns,
                         dynamic_aperture)
+#%%
+print("Plot fits from simulation 2 fixed k.")
+for epsilon in best_fit_parameters2_fixedk:
+    print(epsilon)
+    #for n_angles in best_fit_parameters1[epsilon]:
+    for angle in best_fit_parameters2_fixedk[epsilon][1]:
+        plot_fit_basic2(best_fit_parameters2_fixedk[epsilon][1][angle],
+                        1, epsilon, angle, n_turns,
+                        dynamic_aperture, "img/fit/fit2_fixk_")
 
 #%%
 print("Compare chi squared fits1.")
@@ -235,6 +288,14 @@ for N in best_fit_parameters2[temp]:
         fit_params_over_epsilon2(best_fit_parameters2, N, angle)
 
 #%%
+print("Fit2 param evolution over epsilon fixed k")
+temp = list(best_fit_parameters2_fixedk.keys())[0]
+for N in best_fit_parameters2_fixedk[temp]:
+    for angle in (best_fit_parameters2_fixedk[temp][N]):
+        fit_params_over_epsilon2(best_fit_parameters2_fixedk, N, angle,
+                                 "img/fit/f2param_eps_fixedk")
+
+#%%
 print("compose fit over epsilon.")
 for N in best_fit_parameters2[temp]:
     for angle in (best_fit_parameters2[temp][N]):
@@ -245,6 +306,18 @@ for N in best_fit_parameters2[temp]:
                   "img/fit/f2param_eps_A_N{}_ang{:2.2f}.png".format(N, angle),
                   "img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".format(N, angle),
                   "img/fit/f2param_eps_k_N{}_ang{:2.2f}.png".format(N, angle))
+
+#%%
+print("compose fit over epsilon.")
+for N in best_fit_parameters2[temp]:
+    for angle in (best_fit_parameters2[temp][N]):
+        combine_image_3x2("img/fit/paramsFIT2_over_epsilon_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_fixedk_A_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_fixedk_B_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_fixedk_k_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_A_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_k_N{}_ang{:2.2f}.png".format(N, angle))
 
 #%%
 print("Parameters over partitions")

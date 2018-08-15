@@ -231,6 +231,19 @@ def non_linear_fit1_final(data, err_data, n_turns,
     return best_fit
 
 
+def non_linear_fit1_iterated(data, err_data, n_turns,
+                             k_min, k_max, dk, n_iterations, p0D=0, p0B=0):
+    best_fit = select_best_fit1(non_linear_fit1(
+        data, err_data, n_turns,
+        k_min, k_max, dk, p0D, p0B))
+    for i in range(n_iterations):
+        best_fit = select_best_fit1(non_linear_fit1(
+            data, err_data, n_turns,
+            best_fit[4] - dk, best_fit[4] + dk, dk / 10, p0D, p0B))
+        dk /= 10
+    return best_fit
+
+
 def non_linear_fit1_naive(data, err_data, n_turns, p0D=0, p0B=0, p0k=0):
     try:
         popt, pcov = curve_fit(FIT1,
@@ -410,30 +423,27 @@ def non_linear_fit2_naive(data, err_data, n_turns, p0k=0, p0B=0, p0a=0):
         return(0.,0.,0.,0.,0.,0.)
 
 
-def non_linear_fit2_fixedk(data, err_data, n_turns, p0B=0, p0a=1):
-    #fit2 = lambda x, B, a: B - 0.33 * np.log(np.log(x*a))
-    fit2 = lambda x, b, a: b / np.power(np.log(x*a), 0.33)
+def non_linear_fit2_fixedk(data, err_data, n_turns, p0B=1., p0a=1.):
+    fit2 = lambda x, B, a: B - 0.33 * np.log(np.log(float(a)*x))
     working_data = {}
     working_err_data = {}
     # Preprocessing the data
-    # for label in data:
-    #     working_data[label] = np.log(np.copy(data[label]))
-    #     working_err_data[label] = ((1 / np.copy(data[label])) *
-    #                                         np.copy(err_data[label]))
+    for label in data:
+        working_data[label] = np.log(np.copy(data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) *
+                                            np.copy(err_data[label]))
     try:
         popt, pcov = curve_fit(fit2,
                                n_turns,
-                               #[working_data[i] for i in n_turns],
-                               [data[i] for i in n_turns],
+                               [working_data[i] for i in n_turns],
                                p0=[p0B, p0a],
-                               #sigma=[working_err_data[i] for i in n_turns],
-                               sigma=[err_data[i] for i in n_turns],
+                               sigma=[working_err_data[i] for i in n_turns],
                                bounds=([-np.inf, 0],
                                        [np.inf, np.inf]))
         return (0.33,
                 0.,
-                np.log(popt[0]),
-                (1/popt[0]) * np.sqrt(pcov[0][0]),
+                popt[0],
+                np.sqrt(pcov[0][0]),
                 popt[1],
                 np.sqrt(pcov[1][1]))
     except RuntimeError:
@@ -1087,7 +1097,8 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
     plt.clf()
 
 
-def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
+def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
+                             imgname="img/fit/f2param_eps"):
     ## k
     plt.errorbar(
         [x[2] for x in sorted(fit_params_dict)],
@@ -1104,7 +1115,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
     plt.title("FIT2 $k$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
-    plt.savefig("img/fit/f2param_eps_k_N{}_ang{:2.2f}.png".
+    plt.savefig(imgname + "_k_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
     ## B
@@ -1123,7 +1134,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
     plt.title("FIT2 $B$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
-    plt.savefig("img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".
+    plt.savefig(imgname + "_B_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
     ## a
@@ -1143,7 +1154,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4):
     plt.title("FIT2 $a$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
-    plt.savefig("img/fit/f2param_eps_a_N{}_ang{:2.2f}.png".
+    plt.savefig(imgname + "_a_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
 
