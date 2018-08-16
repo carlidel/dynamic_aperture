@@ -2,6 +2,6 @@ executable            = angle_tracker.o
 output                = output/radscan.$(ClusterId).$(ProcId).out
 error                 = error/radscan.$(ClusterId).$(ProcId).err
 log                   = log/radscan.$(ClusterId).log
-+JobFlavour = "workday"
++JobFlavour = "tomorrow"
 
 queue arguments from ang_arguments.txt
