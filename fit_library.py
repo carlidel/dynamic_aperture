@@ -427,6 +427,16 @@ def plot_fit_basic1(fit_params, N, epsilon, angle, n_turns, dynamic_aperture,
         linewidth=0.5,
         label='fit: $D_\infty={:6.3f}, B={:6.3f}, k={:6.3f}$'.format(
             fit_params[0], fit_params[2], fit_params[4]))
+    plt.plot(
+        n_turns,
+        [pass_params_fit1_min(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
+    plt.plot(
+        n_turns,
+        [pass_params_fit1_max(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
     plt.axhline(
         y=fit_params[0],
         color='r',
@@ -481,6 +491,16 @@ def plot_fit_basic2(fit_params, N, epsilon, angle, n_turns, dynamic_aperture,
         linewidth=0.5,
         label='fit: $a={:.2}, b={:.2}, k={:.2}$'.format(
             fit_params[4], np.exp(fit_params[2]), fit_params[0]))
+    plt.plot(
+        n_turns,
+        [pass_params_fit2_min(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
+    plt.plot(
+        n_turns,
+        [pass_params_fit2_max(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
     plt.xlabel("$N$ turns")
     plt.xscale("log")
     plt.ylabel("$D (A.U.)$")
@@ -539,7 +559,7 @@ def fit_parameters_evolution1(fit_parameters, label="plot"):
             k_temp.append(fit_parameters[N][angle][4])
             D_temp_err.append(fit_parameters[N][angle][1])
             B_temp_err.append(fit_parameters[N][angle][3])
-            k_temp_err.append(k_error)
+            k_temp_err.append(fit_parameters[N][angle][5])
         theta.append(theta_temp)
         D.append(D_temp)
         B.append(B_temp)
@@ -857,7 +877,6 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
 ################################################################################
 ################################################################################
 
-
 # Sigmas for gaussian distribution to explore
 sigmas = [0.2, 0.25, 0.5, 0.75, 1]
 
@@ -964,12 +983,135 @@ def error_loss_estimation_single_partition(best_fit_params, fit_func,
 ################################################################################
 ################################################################################
 
+def plot_fit_loss1(fit_params, sigma, epsilon, n_turns, dynamic_aperture,
+                    loss_kind, imgpath="img/loss/fit1"):
+    plt.errorbar(
+        n_turns, dynamic_aperture[sigma][epsilon],
+        yerr=dynamic_aperture[sigma][epsilon] * 0.01,
+        linewidth=0,
+        elinewidth=2,
+        label='Data ' + loss_kind)
+    plt.plot(
+        n_turns,
+        pass_params_fit1(n_turns, fit_params),
+        'g--',
+        linewidth=0.5,
+        label='fit: $D_\infty={:6.3f}, B={:6.3f}, k={:6.3f}$'.format(
+            fit_params[0], fit_params[2], fit_params[4]))
+    plt.plot(
+        n_turns,
+        [pass_params_fit1_min(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
+    plt.plot(
+        n_turns,
+        [pass_params_fit1_max(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
+    plt.axhline(
+        y=fit_params[0],
+        color='r',
+        linestyle='-',
+        label='$y=D_\infty={:6.3f}$'.format(fit_params[0]))
+    plt.xlabel("$N$ turns")
+    plt.xscale("log")
+    plt.ylabel("$D (A.U.)$")
+    plt.ylim(0., 1.)
+    plt.title(
+        "FIT1, " + loss_kind + "\n$\sigma = {:.2f}, \epsilon = {:.2f}$".
+        format(sigma, epsilon[2]))
+    # Tweak for legend.
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$D_\infty = {:.2} \pm {:.2}$".format(fit_params[0],
+                                                    fit_params[1]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$B = {:.2} \pm {:.2}$".format(fit_params[2], fit_params[3]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$k = {:.2} \pm {:.2}$".format(fit_params[4], fit_params[5]))
+    # And then the legend.
+    plt.legend(prop={"size": 7})
+    plt.tight_layout()
+    plt.savefig(
+        imgpath + "sig_{:2.2f}_eps{:2.0f}.png".
+        format(sigma, epsilon[2]),
+        dpi=DPI)
+    plt.clf()
+
+
+def plot_fit_loss2(fit_params, sigma, epsilon, n_turns, dynamic_aperture,
+                    loss_kind, imgpath="img/fit/fit2"):
+    plt.errorbar(
+        n_turns, dynamic_aperture[sigma][epsilon],
+        yerr=dynamic_aperture[sigma][epsilon] * 0.01,
+        linewidth=0,
+        elinewidth=2,
+        label='Data')
+    plt.plot(
+        n_turns,
+        pass_params_fit2(n_turns, fit_params),
+        'g--',
+        linewidth=0.5,
+        label='fit: $a={:.2}, b={:.2}, k={:.2}$'.format(
+            fit_params[4], np.exp(fit_params[2]), fit_params[0]))
+    plt.plot(
+        n_turns,
+        [pass_params_fit2_min(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
+    plt.plot(
+        n_turns,
+        [pass_params_fit2_max(x, fit_params) for x in n_turns],
+        'g--',
+        linewidth=0.5)
+    plt.xlabel("$N$ turns")
+    plt.xscale("log")
+    plt.ylabel("$D (A.U.)$")
+    #plt.ylim(0., 1.)
+    plt.title(
+        "FIT2, " + loss_kind + "\n$\sigma = {:.2f}, \epsilon = {:.2f}$".
+        format(sigma, epsilon[2]))
+    # Tweak for legend.
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$a = {:.2} \pm {:.2}$".format(fit_params[4], fit_params[5]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$b = {:.2} \pm {:.2}$".format(
+            np.exp(fit_params[2]),
+            np.exp(fit_params[2]) * fit_params[3]))
+    plt.plot(
+        [], [],
+        '',
+        linewidth=0,
+        label="$k = {:.2} \pm {:.2}$".format(fit_params[0], fit_params[1]))
+    # And then the legend.
+    plt.legend(prop={"size": 7})
+    plt.tight_layout()
+    plt.savefig(
+        imgpath + "sig_{:2.2f}_eps{:2.0f}.png".
+        format(sigma, epsilon[2]),
+        dpi=DPI)
+    plt.clf()
+
 
 def plot_losses(title, filename,
                 n_turns, data_list=[], data_label_list=[],
                 param_list=[], param_list_min=[], param_list_max=[],
                 param_error_list=[], param_label_list=[]):
-    colors = ['C0','C1','C2','C3','C4','C5','C6','C7','C8','C9']
+    colors = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
     j = 0
     for i in range(len(data_list)):
         plt.plot(

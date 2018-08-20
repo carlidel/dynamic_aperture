@@ -232,30 +232,35 @@ for epsilon in dynamic_aperture:
 #%%
 print("Plot fits from simulation 1.")
 for epsilon in best_fit_parameters1:
+    print(epsilon)
     #for n_angles in best_fit_parameters1[epsilon]:
-    for angle in best_fit_parameters1[epsilon][1]:
-        plot_fit_basic1(best_fit_parameters1[epsilon][1][angle],
-                        1, epsilon, angle, n_turns,
-                        dynamic_aperture)
+    for N in best_fit_parameters1[epsilon]:
+        for angle in best_fit_parameters1[epsilon][N]:
+            plot_fit_basic1(best_fit_parameters1[epsilon][N][angle],
+                            N, epsilon, angle, n_turns,
+                            dynamic_aperture)
 
 #%%
 print("Plot fits from simulation 2.")
 for epsilon in best_fit_parameters2:
+    print(epsilon)
     #for n_angles in best_fit_parameters1[epsilon]:
-    for angle in best_fit_parameters2[epsilon][1]:
-        plot_fit_basic2(best_fit_parameters2[epsilon][1][angle],
-                        1, epsilon, angle, n_turns,
-                        dynamic_aperture)
+    for N in best_fit_parameters2[epsilon]:
+        for angle in best_fit_parameters2[epsilon][N]:
+            plot_fit_basic2(best_fit_parameters2[epsilon][N][angle],
+                            N, epsilon, angle, n_turns,
+                            dynamic_aperture)
 
 #%%
 print("Plot fits from simulation 2 fixed k.")
 for epsilon in best_fit_parameters2_fixedk:
     print(epsilon)
     #for n_angles in best_fit_parameters1[epsilon]:
-    for angle in best_fit_parameters2_fixedk[epsilon][1]:
-        plot_fit_basic2(best_fit_parameters2_fixedk[epsilon][1][angle],
-                        1, epsilon, angle, n_turns,
-                        dynamic_aperture, "img/fit/fit2_fixk_")
+    for N in best_fit_parameters2_fixedk[epsilon]:
+        for angle in best_fit_parameters2_fixedk[epsilon][N]:
+            plot_fit_basic2(best_fit_parameters2_fixedk[epsilon][N][angle],
+                            N, epsilon, angle, n_turns,
+                            dynamic_aperture, "img/fit/fit2_fixk_")
 
 #%%
 print("Compare chi squared fits1.")
@@ -352,39 +357,31 @@ for epsilon in best_fit_parameters2:
 ################################################################################
 ################################################################################
 ################################################################################
-
 #%%
 print("Is this loss?")
 
-# Weights at beginning
+# Sigmas to explore
 sigmas = [0.2, 0.25, 0.5, 0.75, 1]
 
-loss_precise = {}
-loss_anglescan = {}
+I0 = 0.25
+weights = {}
 
-loss_D_fit1 = {}
-loss_D_fit1_min = {}
-loss_D_fit1_max = {}
-
-loss_D_fit2 = {}
-loss_D_fit2_min = {}
-loss_D_fit2_max = {}
-
-loss_D_fit1_err = {}
-loss_D_fit2_err = {}
-
+print("Computing weights")
 for sigma in sigmas:
     print(sigma)
-
+    weights_sigma = {}
     temp = list(data.keys())[0]
-    weights = {}
-    I0 = 0.25
     for angle in data[temp]:
-        weights[angle] = [intensity_zero_gaussian(i * dx * np.cos(angle),
+        weights_sigma[angle] = [intensity_zero_gaussian(i * dx * np.cos(angle),
             i * dx * np.sin(angle), sigma, sigma) for i in range(100)]
+    weights[sigma] = weights_sigma
 
-    print("precise")
-    loss_precise_temp = {}
+#%%
+print("loss considering all")
+loss_all = {}
+for sigma in sigmas:
+    print(sigma)
+    loss_all_sigma = {}
     for epsilon in data:
         print(epsilon)
         intensity_evolution = [I0]
@@ -394,14 +391,18 @@ for sigma in sigmas:
                 mask[angle] = [x >= time for x in data[epsilon][angle]]
             masked_weights = {}
             for angle in data[epsilon]:
-                masked_weights[angle] = [mask[angle][i] * weights[angle][i]
+                masked_weights[angle] = [mask[angle][i] * weights[sigma][angle][i]
                                          for i in range(len(mask[angle]))]
             intensity_evolution.append(radscan_intensity(masked_weights))
-        loss_precise_temp[epsilon] = np.asarray(intensity_evolution) / I0
-    loss_precise[sigma] = loss_precise_temp
+        loss_all_sigma[epsilon] = np.asarray(intensity_evolution) / I0
+    loss_all[sigma] = loss_all_sigma
 
-    print("anglescan")
-    loss_anglescan_temp = {}
+#%%
+print("loss considering only main part")
+loss_mainregion = {}
+for sigma in sigmas:
+    print(sigma)
+    loss_mainregion_sigma = {}
     for epsilon in data:
         print(epsilon)
         intensity_evolution = [I0]
@@ -412,157 +413,220 @@ for sigma in sigmas:
                                 for i in range(len(data[epsilon][angle]))]
             masked_weights = {}
             for angle in data[epsilon]:
-                masked_weights[angle] = [mask[angle][i] * weights[angle][i]
+                masked_weights[angle] = [mask[angle][i] * weights[sigma][angle][i]
                                          for i in range(len(mask[angle]))]
             intensity_evolution.append(radscan_intensity(masked_weights))
-        loss_anglescan_temp[epsilon] = np.asarray(intensity_evolution) / I0
-    loss_anglescan[sigma] = loss_anglescan_temp
+        loss_mainregion_sigma[epsilon] = np.asarray(intensity_evolution) / I0
+    loss_mainregion[sigma] = loss_mainregion_sigma
 
-    print("from fit1")
-    loss_D_fit_temp = {}
-    loss_D_fit_temp_min = {}
-    loss_D_fit_temp_max = {}
-    loss_D_fit_temp_err = {}
+#%%
+print("loss considering FIT1")
+loss_D_fit1 = {}
+loss_D_fit1_min = {}
+loss_D_fit1_max = {}
+loss_D_fit1_err = {}
+for sigma in sigmas:
+    print(sigma)
+    loss_D_fit1_sigma = {}
+    loss_D_fit1_min_sigma = {}
+    loss_D_fit1_max_sigma = {}
+    loss_D_fit1_err_sigma = {}
     for epsilon in best_fit_parameters1:
         print(epsilon)
-        loss_D_fit_temp_part = {}
-        loss_D_fit_temp_part_min = {}
-        loss_D_fit_temp_part_max = {}
-        loss_D_fit_temp_part_err = {}
+        loss_D_fit1_sigma_epsilon = {}
+        loss_D_fit1_min_sigma_epsilon = {}
+        loss_D_fit1_max_sigma_epsilon = {}
+        loss_D_fit1_err_sigma_epsilon = {}
         for N in best_fit_parameters1[epsilon]:
             intensity_evolution = [1.]
             intensity_evolution_min = [1.]
             intensity_evolution_max = [1.]
-            error_evolution = [0.]
+            intensity_evolution_err = [0.]   
             for time in n_turns:
                 intensity_evolution.append(
                     multiple_partition_intensity(
-                                            best_fit_parameters1[epsilon][N],
-                                            pass_params_fit1,
-                                            N,
-                                            time,
-                                            sigma))
+                        best_fit_parameters1[epsilon][N],
+                        pass_params_fit1,
+                        N, time, sigma))
                 intensity_evolution_min.append(
                     multiple_partition_intensity(
-                                            best_fit_parameters1[epsilon][N],
-                                            pass_params_fit1_min,
-                                            N,
-                                            time,
-                                            sigma))
+                        best_fit_parameters1[epsilon][N],
+                        pass_params_fit1_min,
+                        N, time, sigma))
                 intensity_evolution_max.append(
                     multiple_partition_intensity(
-                                            best_fit_parameters1[epsilon][N],
-                                            pass_params_fit1_max,
-                                            N,
-                                            time,
-                                            sigma))
-                error_evolution.append(
-                    error_loss_estimation(best_fit_parameters1[epsilon][N],
-                                          pass_params_fit1,
-                                          contour_data[epsilon],
-                                          N,
-                                          time,
-                                          sigma))
-            loss_D_fit_temp_part[N] = np.asarray(intensity_evolution)
-            loss_D_fit_temp_part_min[N] = np.asarray(intensity_evolution_min)
-            loss_D_fit_temp_part_max[N] = np.asarray(intensity_evolution_max)
-            loss_D_fit_temp_part_err[N] = np.asarray(error_evolution)
-            #print(loss_D_fit_temp_part[N])
-        loss_D_fit_temp[epsilon] = loss_D_fit_temp_part
-        loss_D_fit_temp_min[epsilon] = loss_D_fit_temp_part_min
-        loss_D_fit_temp_max[epsilon] = loss_D_fit_temp_part_max
-        loss_D_fit_temp_err[epsilon] = loss_D_fit_temp_part_err
-    loss_D_fit1[sigma] = loss_D_fit_temp
-    loss_D_fit1_min[sigma] = loss_D_fit_temp_min
-    loss_D_fit1_max[sigma] = loss_D_fit_temp_max
-    loss_D_fit1_err[sigma] = loss_D_fit_temp_err
+                        best_fit_parameters1[epsilon][N],
+                        pass_params_fit1_max,
+                        N, time, sigma))
+                intensity_evolution_err.append(
+                    error_loss_estimation(
+                        best_fit_parameters1[epsilon][N],
+                        pass_params_fit1, contour_data[epsilon],
+                        N, time, sigma))
+            loss_D_fit1_sigma_epsilon[N] = np.asarray(intensity_evolution)
+            loss_D_fit1_min_sigma_epsilon[N] = np.asarray(intensity_evolution_min)
+            loss_D_fit1_max_sigma_epsilon[N] = np.asarray(intensity_evolution_max)
+            loss_D_fit1_err_sigma_epsilon[N] = np.asarray(intensity_evolution_err)
+        loss_D_fit1_sigma[epsilon] = loss_D_fit1_sigma_epsilon
+        loss_D_fit1_min_sigma[epsilon] = loss_D_fit1_min_sigma_epsilon
+        loss_D_fit1_max_sigma[epsilon] = loss_D_fit1_max_sigma_epsilon
+        loss_D_fit1_err_sigma[epsilon] = loss_D_fit1_err_sigma_epsilon    
+    loss_D_fit1[sigma] = loss_D_fit1_sigma
+    loss_D_fit1_min[sigma] = loss_D_fit1_min_sigma
+    loss_D_fit1_max[sigma] = loss_D_fit1_max_sigma
+    loss_D_fit1_err[sigma] = loss_D_fit1_err_sigma
 
-    print("from fit2")
-    loss_D_fit_temp = {}
-    loss_D_fit_temp_min = {}
-    loss_D_fit_temp_max = {}
-    loss_D_fit_temp_err = {}
-    for epsilon in best_fit_parameters2:
+#%%
+print("loss considering FIT2")
+loss_D_fit2 = {}
+loss_D_fit2_min = {}
+loss_D_fit2_max = {}
+loss_D_fit2_err = {}
+for sigma in sigmas:
+    print(sigma)
+    loss_D_fit2_sigma = {}
+    loss_D_fit2_min_sigma = {}
+    loss_D_fit2_max_sigma = {}
+    loss_D_fit2_err_sigma = {}
+    for epsilon in best_fit_parameters1:
         print(epsilon)
-        loss_D_fit_temp_part = {}
-        loss_D_fit_temp_part_min = {}
-        loss_D_fit_temp_part_max = {}
-        loss_D_fit_temp_part_err = {}
-        for N in best_fit_parameters2[epsilon]:
+        loss_D_fit2_sigma_epsilon = {}
+        loss_D_fit2_min_sigma_epsilon = {}
+        loss_D_fit2_max_sigma_epsilon = {}
+        loss_D_fit2_err_sigma_epsilon = {}
+        for N in best_fit_parameters1[epsilon]:
             intensity_evolution = [1.]
             intensity_evolution_min = [1.]
             intensity_evolution_max = [1.]
-            error_evolution = [0.]
+            intensity_evolution_err = [0.]   
             for time in n_turns:
                 intensity_evolution.append(
                     multiple_partition_intensity(
-                                            best_fit_parameters2[epsilon][N],
-                                            pass_params_fit2,
-                                            N,
-                                            time,
-                                            sigma))
+                        best_fit_parameters2[epsilon][N],
+                        pass_params_fit2,
+                        N, time, sigma))
                 intensity_evolution_min.append(
                     multiple_partition_intensity(
-                                            best_fit_parameters2[epsilon][N],
-                                            pass_params_fit2_min,
-                                            N,
-                                            time,
-                                            sigma))
+                        best_fit_parameters2[epsilon][N],
+                        pass_params_fit2_min,
+                        N, time, sigma))
                 intensity_evolution_max.append(
                     multiple_partition_intensity(
-                                            best_fit_parameters2[epsilon][N],
-                                            pass_params_fit2_max,
-                                            N,
-                                            time,
-                                            sigma))
-                error_evolution.append(
-                    error_loss_estimation(best_fit_parameters2[epsilon][N],
-                                          pass_params_fit2,
-                                          contour_data[epsilon],
-                                          N,
-                                          time,
-                                          sigma))
-            loss_D_fit_temp_part[N] = np.asarray(intensity_evolution)
-            loss_D_fit_temp_part_min[N] = np.asarray(intensity_evolution_min)
-            loss_D_fit_temp_part_max[N] = np.asarray(intensity_evolution_max)
-            loss_D_fit_temp_part_err[N] = np.asarray(error_evolution)
-            #print(loss_D_fit_temp_part[N])
-        loss_D_fit_temp[epsilon] = loss_D_fit_temp_part
-        loss_D_fit_temp_min[epsilon] = loss_D_fit_temp_part_min
-        loss_D_fit_temp_max[epsilon] = loss_D_fit_temp_part_max
-        loss_D_fit_temp_err[epsilon] = loss_D_fit_temp_part_err
-    loss_D_fit2[sigma] = loss_D_fit_temp
-    loss_D_fit2_min[sigma] = loss_D_fit_temp_min
-    loss_D_fit2_max[sigma] = loss_D_fit_temp_max
-    loss_D_fit2_err[sigma] = loss_D_fit_temp_err
+                        best_fit_parameters2[epsilon][N],
+                        pass_params_fit2_max,
+                        N, time, sigma))
+                intensity_evolution_err.append(
+                    error_loss_estimation(
+                        best_fit_parameters2[epsilon][N],
+                        pass_params_fit2, contour_data[epsilon],
+                        N, time, sigma))
+            loss_D_fit2_sigma_epsilon[N] = np.asarray(intensity_evolution)
+            loss_D_fit2_min_sigma_epsilon[N] = np.asarray(intensity_evolution_min)
+            loss_D_fit2_max_sigma_epsilon[N] = np.asarray(intensity_evolution_max)
+            loss_D_fit2_err_sigma_epsilon[N] = np.asarray(intensity_evolution_err)
+        loss_D_fit2_sigma[epsilon] = loss_D_fit2_sigma_epsilon
+        loss_D_fit2_min_sigma[epsilon] = loss_D_fit2_min_sigma_epsilon
+        loss_D_fit2_max_sigma[epsilon] = loss_D_fit2_max_sigma_epsilon
+        loss_D_fit2_err_sigma[epsilon] = loss_D_fit2_err_sigma_epsilon
+    loss_D_fit2[sigma] = loss_D_fit2_sigma
+    loss_D_fit2_min[sigma] = loss_D_fit2_min_sigma
+    loss_D_fit2_max[sigma] = loss_D_fit2_max_sigma
+    loss_D_fit2_err[sigma] = loss_D_fit2_err_sigma
 
 #%%
-print("Reverse engeneering dynamic_aperture")
+print("Reverse loss for dynamic aperture")
 
-processed_data_precise = {}
-processed_data_anglescan = {}
+D_from_loss_all = {}
+D_from_loss_mainregion = {}
 
-for sigma in loss_precise:
-    processed_data_precise_temp = {}
-    processed_data_anglescan_temp = {}
-    for epsilon in loss_precise[sigma]:
-        processed_data_precise_temp[epsilon] = D_from_loss(
-            np.copy(loss_precise[sigma][epsilon][1:]),
+for sigma in loss_all:
+    D_from_loss_all_sigma = {}
+    D_from_loss_mainregion_sigma = {}
+    for epsilon in loss_all[sigma]:
+        D_from_loss_all_sigma[epsilon] = D_from_loss(
+            np.copy(loss_all[sigma][epsilon][1:]),
             sigma)
-        processed_data_anglescan_temp[epsilon] = D_from_loss(
-            np.copy(loss_anglescan[sigma][epsilon][1:]),
+        D_from_loss_mainregion_sigma[epsilon] = D_from_loss(
+            np.copy(loss_mainregion[sigma][epsilon][1:]),
             sigma)
-    processed_data_precise[sigma] = processed_data_precise_temp
-    processed_data_anglescan[sigma] = processed_data_anglescan_temp
+    D_from_loss_all[sigma] = D_from_loss_all_sigma
+    D_from_loss_mainregion[sigma] = D_from_loss_mainregion_sigma
 
 #%%
-print("Fit on precise loss.")
+print("Fit1 on loss all")
 
-# Search parameters
 k_min = -20.
 k_max = 7.
 dk = 0.1
 n_iterations = 7
+
+fit1_loss_all = {}
+for sigma in loss_all:
+    print(sigma)
+    fit1_loss_all_sigma = {}
+    for epsilon in loss_all[sigma]:
+        fit1_loss_all_sigma[epsilon] = non_linear_fit1_iterated(
+            dict(zip(n_turns,
+                D_from_loss_all[sigma][epsilon])),
+            dict(zip(n_turns,
+                D_from_loss_all[sigma][epsilon] * 0.001)),
+            n_turns, k_min, k_max, dk, n_iterations)
+    fit1_loss_all[sigma] = fit1_loss_all_sigma
+
+#%%
+print("plot the fit result")
+for sigma in loss_all:
+    for epsilon in loss_all[sigma]:
+        print(sigma, epsilon)
+        plot_fit_loss1(fit1_loss_all[sigma][epsilon],
+            sigma, epsilon, n_turns, D_from_loss_all,
+            "all", "img/loss/fit1_all")
+
+#%%
+print("and now loss")
+loss_fit1_loss_all = {}
+loss_fit1_loss_all_min = {}
+loss_fit1_loss_all_max = {}
+loss_fit1_loss_all_err = {}
+for sigma in sigmas:
+    print(sigma)
+    loss_fit1_loss_all_sigma = {}
+    loss_fit1_loss_all_min_sigma = {}
+    loss_fit1_loss_all_max_sigma = {}
+    loss_fit1_loss_all_err_sigma = {}
+    for epsilon in fit1_loss_all[sigma]:
+        print(epsilon)
+        intensity_evolution = [1.]
+        intensity_evolution_min = [1.]
+        intensity_evolution_max = [1.]
+        intensity_evolution_err = [0.]
+        for time in n_turns:
+            intensity_evolution.append(
+                single_partition_intensity(fit1_loss_all[sigma][epsilon],
+                                           pass_params_fit1, time, sigma))
+            intensity_evolution_min.append(
+                single_partition_intensity(fit1_loss_all[sigma][epsilon],
+                                           pass_params_fit1_min, time, sigma))
+            intensity_evolution_max.append(
+                single_partition_intensity(fit1_loss_all[sigma][epsilon],
+                                           pass_params_fit1_max, time, sigma))
+            intensity_evolution_err.append(
+                error_loss_estimation_single_partition(
+                                            fit1_loss_all[sigma][epsilon],
+                                            pass_params_fit1,
+                                            contour_data[epsilon],
+                                            time, sigma))
+        loss_fit1_loss_all_sigma[epsilon] = np.asarray(intensity_evolution)
+        loss_fit1_loss_all_min_sigma[epsilon] = np.asarray(intensity_evolution_min)
+        loss_fit1_loss_all_max_sigma[epsilon] = np.asarray(intensity_evolution_max)
+        loss_fit1_loss_all_err_sigma[epsilon] = np.asarray(intensity_evolution_err)
+    loss_fit1_loss_all[sigma] = loss_fit1_loss_all_sigma
+    loss_fit1_loss_all_min[sigma] = loss_fit1_loss_all_min_sigma
+    loss_fit1_loss_all_max[sigma] = loss_fit1_loss_all_max_sigma
+    loss_fit1_loss_all_err[sigma] = loss_fit1_loss_all_err_sigma
+
+#%%
+print("Fit2 on loss all")
 
 da = 0.0001
 a_max = 0.01
@@ -570,40 +634,146 @@ a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
 a_bound = 1e10
 a_default = n_turns[-1]
 
-fit_precise_loss1 = {}
-fit_precise_loss2 = {}
-
-for sigma in loss_precise:
+fit2_loss_all = {}
+for sigma in loss_all:
     print(sigma)
-    fit_sigma_temp1 = {}
-    fit_sigma_temp2 = {}
-    for epsilon in loss_precise[sigma]:
-        fit_sigma_temp1[epsilon] = non_linear_fit1_iterated(
-                dict(zip(n_turns,
-                    processed_data_precise[sigma][epsilon])),
-                dict(zip(n_turns,
-                    processed_data_precise[sigma][epsilon] * 0.01)),
-                n_turns,
-                k_min, k_max, dk, n_iterations)
-                
-        fit_sigma_temp2[epsilon] = non_linear_fit2_final(
-                dict(zip(n_turns,
-                         processed_data_precise[sigma][epsilon])),
-                dict(zip(n_turns,
-                         processed_data_precise[sigma][epsilon] * 0.01)),
-                n_turns,
-                a_min, a_max, da, a_bound, a_default)
-    fit_precise_loss1[sigma] = fit_sigma_temp1
-    fit_precise_loss2[sigma] = fit_sigma_temp2
+    fit2_loss_all_sigma = {}
+    for epsilon in loss_all[sigma]:
+        fit2_loss_all_sigma[epsilon] = non_linear_fit2_final(
+            dict(zip(n_turns,
+                D_from_loss_all[sigma][epsilon])),
+            dict(zip(n_turns,
+                D_from_loss_all[sigma][epsilon] * 0.001)),
+            n_turns, a_min, a_max, da, a_bound, a_default)
+    fit2_loss_all[sigma] = fit2_loss_all_sigma
 
 #%%
-print("Fit on anglescan loss")
+print("plot the fit result")
+for sigma in loss_all:
+    for epsilon in loss_all[sigma]:
+        print(sigma, epsilon)
+        plot_fit_loss2(fit2_loss_all[sigma][epsilon],
+            sigma, epsilon, n_turns, D_from_loss_all,
+            "all", "img/loss/fit2_all")
 
-# Search parameters
+#%%
+print("and now loss")
+loss_fit2_loss_all = {}
+loss_fit2_loss_all_min = {}
+loss_fit2_loss_all_max = {}
+loss_fit2_loss_all_err = {}
+for sigma in sigmas:
+    print(sigma)
+    loss_fit2_loss_all_sigma = {}
+    loss_fit2_loss_all_min_sigma = {}
+    loss_fit2_loss_all_max_sigma = {}
+    loss_fit2_loss_all_err_sigma = {}
+    for epsilon in fit2_loss_all[sigma]:
+        print(epsilon)
+        intensity_evolution = [1.]
+        intensity_evolution_min = [1.]
+        intensity_evolution_max = [1.]
+        intensity_evolution_err = [0.]
+        for time in n_turns:
+            intensity_evolution.append(
+                single_partition_intensity(fit2_loss_all[sigma][epsilon],
+                                           pass_params_fit2, time, sigma))
+            intensity_evolution_min.append(
+                single_partition_intensity(fit2_loss_all[sigma][epsilon],
+                                           pass_params_fit2_min, time, sigma))
+            intensity_evolution_max.append(
+                single_partition_intensity(fit2_loss_all[sigma][epsilon],
+                                           pass_params_fit2_max, time, sigma))
+            intensity_evolution_err.append(
+                error_loss_estimation_single_partition(
+                                            fit2_loss_all[sigma][epsilon],
+                                            pass_params_fit2,
+                                            contour_data[epsilon],
+                                            time, sigma))
+        loss_fit2_loss_all_sigma[epsilon] = np.asarray(intensity_evolution)
+        loss_fit2_loss_all_min_sigma[epsilon] = np.asarray(intensity_evolution_min)
+        loss_fit2_loss_all_max_sigma[epsilon] = np.asarray(intensity_evolution_max)
+        loss_fit2_loss_all_err_sigma[epsilon] = np.asarray(intensity_evolution_err)
+    loss_fit2_loss_all[sigma] = loss_fit2_loss_all_sigma
+    loss_fit2_loss_all_min[sigma] = loss_fit2_loss_all_min_sigma
+    loss_fit2_loss_all_max[sigma] = loss_fit2_loss_all_max_sigma
+    loss_fit2_loss_all_err[sigma] = loss_fit2_loss_all_err_sigma
+
+#%%
+print("Fit1 on loss mainregion")
+
 k_min = -20.
 k_max = 7.
 dk = 0.1
 n_iterations = 7
+
+fit1_loss_mainregion = {}
+for sigma in loss_mainregion:
+    print(sigma)
+    fit1_loss_mainregion_sigma = {}
+    for epsilon in loss_mainregion[sigma]:
+        fit1_loss_mainregion_sigma[epsilon] = non_linear_fit1_iterated(
+            dict(zip(n_turns,
+                D_from_loss_mainregion[sigma][epsilon])),
+            dict(zip(n_turns,
+                D_from_loss_mainregion[sigma][epsilon] * 0.001)),
+            n_turns, k_min, k_max, dk, n_iterations)
+    fit1_loss_mainregion[sigma] = fit1_loss_mainregion_sigma
+
+#%%
+print("plot the fit result")
+for sigma in loss_mainregion:
+    for epsilon in loss_mainregion[sigma]:
+        print(sigma, epsilon)
+        plot_fit_loss1(fit1_loss_mainregion[sigma][epsilon],
+            sigma, epsilon, n_turns, D_from_loss_mainregion,
+            "mainregion", "img/loss/fit1_mainregion")
+
+#%%
+print("and now loss")
+loss_fit1_loss_mainregion = {}
+loss_fit1_loss_mainregion_min = {}
+loss_fit1_loss_mainregion_max = {}
+loss_fit1_loss_mainregion_err = {}
+for sigma in sigmas:
+    print(sigma)
+    loss_fit1_loss_mainregion_sigma = {}
+    loss_fit1_loss_mainregion_min_sigma = {}
+    loss_fit1_loss_mainregion_max_sigma = {}
+    loss_fit1_loss_mainregion_err_sigma = {}
+    for epsilon in fit1_loss_mainregion[sigma]:
+        print(epsilon)
+        intensity_evolution = [1.]
+        intensity_evolution_min = [1.]
+        intensity_evolution_max = [1.]
+        intensity_evolution_err = [0.]
+        for time in n_turns:
+            intensity_evolution.append(
+                single_partition_intensity(fit1_loss_mainregion[sigma][epsilon],
+                                           pass_params_fit1, time, sigma))
+            intensity_evolution_min.append(
+                single_partition_intensity(fit1_loss_mainregion[sigma][epsilon],
+                                           pass_params_fit1_min, time, sigma))
+            intensity_evolution_max.append(
+                single_partition_intensity(fit1_loss_mainregion[sigma][epsilon],
+                                           pass_params_fit1_max, time, sigma))
+            intensity_evolution_err.append(
+                error_loss_estimation_single_partition(
+                                            fit1_loss_mainregion[sigma][epsilon],
+                                            pass_params_fit1,
+                                            contour_data[epsilon],
+                                            time, sigma))
+        loss_fit1_loss_mainregion_sigma[epsilon] = np.asarray(intensity_evolution)
+        loss_fit1_loss_mainregion_min_sigma[epsilon] = np.asarray(intensity_evolution_min)
+        loss_fit1_loss_mainregion_max_sigma[epsilon] = np.asarray(intensity_evolution_max)
+        loss_fit1_loss_mainregion_err_sigma[epsilon] = np.asarray(intensity_evolution_err)
+    loss_fit1_loss_mainregion[sigma] = loss_fit1_loss_mainregion_sigma
+    loss_fit1_loss_mainregion_min[sigma] = loss_fit1_loss_mainregion_min_sigma
+    loss_fit1_loss_mainregion_max[sigma] = loss_fit1_loss_mainregion_max_sigma
+    loss_fit1_loss_mainregion_err[sigma] = loss_fit1_loss_mainregion_err_sigma
+
+#%%
+print("Fit2 on loss mainregion")
 
 da = 0.0001
 a_max = 0.01
@@ -611,310 +781,139 @@ a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
 a_bound = 1e10
 a_default = n_turns[-1]
 
-fit_anglescan_loss1 = {}
-fit_anglescan_loss2 = {}
-
-for sigma in loss_anglescan:
+fit2_loss_mainregion = {}
+for sigma in loss_mainregion:
     print(sigma)
-    fit_sigma_temp1 = {}
-    fit_sigma_temp2 = {}
-    for epsilon in loss_anglescan[sigma]:
-        processed_data = D_from_loss(
-            np.copy(loss_anglescan[sigma][epsilon][1:]),
-            sigma)
-        fit_sigma_temp1[epsilon] = non_linear_fit1_iterated(
-                dict(zip(n_turns,
-                    processed_data_anglescan[sigma][epsilon])),
-                dict(zip(n_turns,
-                    processed_data_anglescan[sigma][epsilon] * 0.01)),
-                n_turns,
-                k_min, k_max, dk, n_iterations)
-        fit_sigma_temp2[epsilon] = non_linear_fit2_final(
-                dict(zip(n_turns,
-                         processed_data_precise[sigma][epsilon])),
-                dict(zip(n_turns,
-                         processed_data_precise[sigma][epsilon] * 0.01)),
-                n_turns,
-                a_min, a_max, da, a_bound, a_default)
-    fit_anglescan_loss1[sigma] = fit_sigma_temp1
-    fit_anglescan_loss2[sigma] = fit_sigma_temp2
+    fit2_loss_mainregion_sigma = {}
+    for epsilon in loss_mainregion[sigma]:
+        fit2_loss_mainregion_sigma[epsilon] = non_linear_fit2_final(
+            dict(zip(n_turns,
+                D_from_loss_mainregion[sigma][epsilon])),
+            dict(zip(n_turns,
+                D_from_loss_mainregion[sigma][epsilon] * 0.001)),
+            n_turns, a_min, a_max, da, a_bound, a_default)
+    fit2_loss_mainregion[sigma] = fit2_loss_mainregion_sigma
 
 #%%
-print("compute loss precise from precise fits.")
+print("plot the fit result")
+for sigma in loss_mainregion:
+    for epsilon in loss_mainregion[sigma]:
+        print(sigma, epsilon)
+        plot_fit_loss2(fit2_loss_mainregion[sigma][epsilon],
+            sigma, epsilon, n_turns, D_from_loss_mainregion,
+            "mainregion", "img/loss/fit2_mainregion")
 
-loss_precise_fit1 = {}
-loss_precise_fit1_min = {}
-loss_precise_fit1_max = {}
-
-loss_precise_fit2 = {}
-loss_precise_fit2_min = {}
-loss_precise_fit2_max = {}
-
-loss_precise_fit1_err = {}
-loss_precise_fit2_err = {}
-
+#%%
+print("and now loss")
+loss_fit2_loss_mainregion = {}
+loss_fit2_loss_mainregion_min = {}
+loss_fit2_loss_mainregion_max = {}
+loss_fit2_loss_mainregion_err = {}
 for sigma in sigmas:
     print(sigma)
-    print("from fit1")
-
-    loss_D_fit_temp = {}
-    loss_D_fit_temp_min = {}
-    loss_D_fit_temp_max = {}
-    loss_D_fit_temp_err = {}
-    for epsilon in fit_precise_loss1[sigma]:
+    loss_fit2_loss_mainregion_sigma = {}
+    loss_fit2_loss_mainregion_min_sigma = {}
+    loss_fit2_loss_mainregion_max_sigma = {}
+    loss_fit2_loss_mainregion_err_sigma = {}
+    for epsilon in fit2_loss_mainregion[sigma]:
         print(epsilon)
         intensity_evolution = [1.]
         intensity_evolution_min = [1.]
         intensity_evolution_max = [1.]
-        error_evolution = [0.]
+        intensity_evolution_err = [0.]
         for time in n_turns:
             intensity_evolution.append(
-                single_partition_intensity(fit_precise_loss1[sigma][epsilon],
-                                           pass_params_fit1,
-                                           time,
-                                           sigma))
+                single_partition_intensity(fit2_loss_mainregion[sigma][epsilon],
+                                           pass_params_fit2, time, sigma))
             intensity_evolution_min.append(
-                single_partition_intensity(fit_precise_loss1[sigma][epsilon],
-                                           pass_params_fit1_min,
-                                           time,
-                                           sigma))
+                single_partition_intensity(fit2_loss_mainregion[sigma][epsilon],
+                                           pass_params_fit2_min, time, sigma))
             intensity_evolution_max.append(
-                single_partition_intensity(fit_precise_loss1[sigma][epsilon],
-                                           pass_params_fit1_max,
-                                           time,
-                                           sigma))
-            error_evolution.append(
+                single_partition_intensity(fit2_loss_mainregion[sigma][epsilon],
+                                           pass_params_fit2_max, time, sigma))
+            intensity_evolution_err.append(
                 error_loss_estimation_single_partition(
-                                            fit_precise_loss1[sigma][epsilon],
-                                            pass_params_fit1,
-                                            contour_data[epsilon],
-                                            time,
-                                            sigma))
-        loss_D_fit_temp[epsilon] = intensity_evolution
-        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
-        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
-        loss_D_fit_temp_err[epsilon] = error_evolution
-    loss_precise_fit1[sigma] = loss_D_fit_temp
-    loss_precise_fit1_min[sigma] = loss_D_fit_temp_min
-    loss_precise_fit1_max[sigma] = loss_D_fit_temp_max
-    loss_precise_fit1_err[sigma] = loss_D_fit_temp_err
-
-    print("from fit2")
-
-    loss_D_fit_temp = {}
-    loss_D_fit_temp_min = {}
-    loss_D_fit_temp_max = {}
-    loss_D_fit_temp_err = {}
-    for epsilon in fit_precise_loss2[sigma]:
-        print(epsilon)
-        intensity_evolution = [1.]
-        intensity_evolution_min = [1.]
-        intensity_evolution_max = [1.]
-        error_evolution = [0.]
-        for time in n_turns:
-            intensity_evolution.append(
-                single_partition_intensity(fit_precise_loss2[sigma][epsilon],
-                                           pass_params_fit2,
-                                           time,
-                                           sigma))
-            intensity_evolution_max.append(
-                single_partition_intensity(fit_precise_loss2[sigma][epsilon],
-                                           pass_params_fit2_max,
-                                           time,
-                                           sigma))
-            intensity_evolution_min.append(
-                single_partition_intensity(fit_precise_loss2[sigma][epsilon],
-                                           pass_params_fit2_min,
-                                           time,
-                                           sigma))
-            error_evolution.append(
-                error_loss_estimation_single_partition(
-                                            fit_precise_loss1[sigma][epsilon],
+                                            fit2_loss_mainregion[sigma][epsilon],
                                             pass_params_fit2,
                                             contour_data[epsilon],
-                                            time,
-                                            sigma))
-        loss_D_fit_temp[epsilon] = intensity_evolution
-        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
-        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
-        loss_D_fit_temp_err[epsilon] = error_evolution
-    loss_precise_fit2[sigma] = loss_D_fit_temp
-    loss_precise_fit2_min[sigma] = loss_D_fit_temp_min
-    loss_precise_fit2_max[sigma] = loss_D_fit_temp_max
-    loss_precise_fit2_err[sigma] = loss_D_fit_temp_err
+                                            time, sigma))
+        loss_fit2_loss_mainregion_sigma[epsilon] = np.asarray(intensity_evolution)
+        loss_fit2_loss_mainregion_min_sigma[epsilon] = np.asarray(intensity_evolution_min)
+        loss_fit2_loss_mainregion_max_sigma[epsilon] = np.asarray(intensity_evolution_max)
+        loss_fit2_loss_mainregion_err_sigma[epsilon] = np.asarray(intensity_evolution_err)
+    loss_fit2_loss_mainregion[sigma] = loss_fit2_loss_mainregion_sigma
+    loss_fit2_loss_mainregion_min[sigma] = loss_fit2_loss_mainregion_min_sigma
+    loss_fit2_loss_mainregion_max[sigma] = loss_fit2_loss_mainregion_max_sigma
+    loss_fit2_loss_mainregion_err[sigma] = loss_fit2_loss_mainregion_err_sigma
 
 #%%
-print("compute loss anglescan from anglescan fits.")
-
-loss_anglescan_fit1 = {}
-loss_anglescan_fit1_min = {}
-loss_anglescan_fit1_max = {}
-
-loss_anglescan_fit2 = {}
-loss_anglescan_fit2_min = {}
-loss_anglescan_fit2_max = {}
-
-loss_anglescan_fit1_err = {}
-loss_anglescan_fit2_err = {}
-
-for sigma in sigmas:
-    print(sigma)
-    print("from fit1")
-
-    loss_D_fit_temp = {}
-    loss_D_fit_temp_min = {}
-    loss_D_fit_temp_max = {}
-    loss_D_fit_temp_err = {}
-    for epsilon in fit_anglescan_loss1[sigma]:
-        print(epsilon)
-        intensity_evolution = [1.]
-        intensity_evolution_min = [1.]
-        intensity_evolution_max = [1.]
-        error_evolution = [0.]
-        for time in n_turns:
-            intensity_evolution.append(
-                single_partition_intensity(fit_anglescan_loss1[sigma][epsilon],
-                                           pass_params_fit1,
-                                           time,
-                                           sigma))
-            intensity_evolution_min.append(
-                single_partition_intensity(fit_anglescan_loss1[sigma][epsilon],
-                                           pass_params_fit1_min,
-                                           time,
-                                           sigma))
-            intensity_evolution_max.append(
-                single_partition_intensity(fit_anglescan_loss1[sigma][epsilon],
-                                           pass_params_fit1_max,
-                                           time,
-                                           sigma))
-            error_evolution.append(
-                error_loss_estimation_single_partition(
-                                            fit_anglescan_loss1[sigma][epsilon],
-                                            pass_params_fit1,
-                                            contour_data[epsilon],
-                                            time,
-                                            sigma))
-        loss_D_fit_temp[epsilon] = intensity_evolution
-        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
-        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
-        loss_D_fit_temp_err[epsilon] = error_evolution
-    loss_anglescan_fit1[sigma] = loss_D_fit_temp
-    loss_anglescan_fit1_min[sigma] = loss_D_fit_temp_min
-    loss_anglescan_fit1_max[sigma] = loss_D_fit_temp_max
-    loss_anglescan_fit1_err[sigma] = loss_D_fit_temp_err
-
-    print("from fit2")
-
-    loss_D_fit_temp = {}
-    loss_D_fit_temp_min = {}
-    loss_D_fit_temp_max = {}
-    loss_D_fit_temp_err = {}
-    for epsilon in fit_anglescan_loss2[sigma]:
-        print(epsilon)
-        intensity_evolution = [1.]
-        intensity_evolution_min = [1.]
-        intensity_evolution_max = [1.]
-        error_evolution = [0.]
-        for time in n_turns:
-            intensity_evolution.append(
-                single_partition_intensity(fit_anglescan_loss2[sigma][epsilon],
-                                           pass_params_fit2,
-                                           time,
-                                           sigma))
-            intensity_evolution_min.append(
-                single_partition_intensity(fit_anglescan_loss2[sigma][epsilon],
-                                           pass_params_fit2_min,
-                                           time,
-                                           sigma))
-            intensity_evolution_max.append(
-                single_partition_intensity(fit_anglescan_loss2[sigma][epsilon],
-                                           pass_params_fit2_max,
-                                           time,
-                                           sigma))
-            error_evolution.append(
-                error_loss_estimation_single_partition(
-                                            fit_anglescan_loss2[sigma][epsilon],
-                                            pass_params_fit2,
-                                            contour_data[epsilon],
-                                            time,
-                                            sigma))
-        loss_D_fit_temp[epsilon] = intensity_evolution
-        loss_D_fit_temp_min[epsilon] = intensity_evolution_min
-        loss_D_fit_temp_max[epsilon] = intensity_evolution_max
-        loss_D_fit_temp_err[epsilon] = error_evolution
-    loss_anglescan_fit2[sigma] = loss_D_fit_temp
-    loss_anglescan_fit2_min[sigma] = loss_D_fit_temp_min
-    loss_anglescan_fit2_max[sigma] = loss_D_fit_temp_max
-    loss_anglescan_fit2_err[sigma] = loss_D_fit_temp_err
-
-#%%
+    
 print("Plot the losses!")
 
 for sigma in sigmas:
     print(sigma)
-    for epsilon in loss_precise[sigma]:
+    for epsilon in loss_all[sigma]:
         print(epsilon)
         ### Just the losses (no fits)
         plot_losses(
-            ("Comparison of loss measures (PRECISE and ANGLESCAN),\n" +
+            ("Comparison of loss measures (All and Main Region),\n" +
             "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
             format(sigma, epsilon[2])),
-            ("img/loss/loss_precise_anglescan_sig{:2.2f}_eps{:2.0f}.png".
+            ("img/loss/loss_all_mainregion_sig{:2.2f}_eps{:2.0f}.png".
             format(sigma, epsilon[2])),
             n_turns,
-            [loss_precise[sigma][epsilon], loss_anglescan[sigma][epsilon]],
-            ["Precise loss", "Anglescan loss"])
+            [loss_all[sigma][epsilon], loss_mainregion[sigma][epsilon]],
+            ["All loss", "Mainregion loss"])
             
         ### Precise and Precise Fit
         plot_losses(
-            ("Comparison of loss measures (PRECISE with PRECISE FITS),\n" +
+            ("Comparison of loss measures (all with all FITS),\n" +
                 "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
                 format(sigma, epsilon[2])),
-            ("img/loss/loss_precise_and_fits_sig{:2.2f}_eps{:2.0f}.png".
+            ("img/loss/loss_all_and_fits_sig{:2.2f}_eps{:2.0f}.png".
                 format(sigma, epsilon[2])),
             n_turns,
-            [loss_precise[sigma][epsilon]],
-            ["Precise loss"],
-            [loss_precise_fit1[sigma][epsilon],
-                loss_precise_fit2[sigma][epsilon]],
-            [loss_precise_fit1_min[sigma][epsilon],
-                loss_precise_fit2_min[sigma][epsilon]],
-            [loss_precise_fit1_max[sigma][epsilon],
-                loss_precise_fit2_max[sigma][epsilon]],
-            [loss_precise_fit1_err[sigma][epsilon],
-                loss_precise_fit2_err[sigma][epsilon]],
-            ["D loss precise FIT1", "D loss precise FIT2"])
+            [loss_all[sigma][epsilon]],
+            ["All loss"],
+            [loss_fit1_loss_all[sigma][epsilon],
+                loss_fit2_loss_all[sigma][epsilon]],
+            [loss_fit1_loss_all_min[sigma][epsilon],
+                loss_fit2_loss_all_min[sigma][epsilon]],
+            [loss_fit1_loss_all_max[sigma][epsilon],
+                loss_fit2_loss_all_max[sigma][epsilon]],
+            [loss_fit1_loss_all_err[sigma][epsilon],
+                loss_fit2_loss_all_err[sigma][epsilon]],
+            ["D loss all FIT1", "D loss all FIT2"])
 
         ### Anglescan and Anglescan Fit
         plot_losses(
-            ("Comparison of loss measures (anglescan with anglescan FITS),\n" +
+            ("Comparison of loss measures (mainregion with mainregion FITS),\n" +
                             "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
                             format(sigma, epsilon[2])),
-            ("img/loss/loss_anglescan_and_fits_sig{:2.2f}_eps{:2.0f}.png".
+            ("img/loss/loss_mainregion_and_fits_sig{:2.2f}_eps{:2.0f}.png".
                             format(sigma, epsilon[2])),
             n_turns,
-            [loss_anglescan[sigma][epsilon]],
-            ["Precise loss"],
-            [loss_anglescan_fit1[sigma][epsilon],
-                loss_anglescan_fit2[sigma][epsilon]],
-            [loss_anglescan_fit1_min[sigma][epsilon],
-                loss_anglescan_fit2_min[sigma][epsilon]],
-            [loss_anglescan_fit1_max[sigma][epsilon],
-                loss_anglescan_fit2_max[sigma][epsilon]],
-            [loss_anglescan_fit1_err[sigma][epsilon],
-                loss_anglescan_fit2_err[sigma][epsilon]],
-            ["D loss anglescan FIT1", "D loss anglescan FIT2"])
-        
-        ### Precise and D Fits
+            [loss_mainregion[sigma][epsilon]],
+            ["mainregion loss"],
+            [loss_fit1_loss_mainregion[sigma][epsilon],
+                loss_fit2_loss_mainregion[sigma][epsilon]],
+            [loss_fit1_loss_mainregion_min[sigma][epsilon],
+                loss_fit2_loss_mainregion_min[sigma][epsilon]],
+            [loss_fit1_loss_mainregion_max[sigma][epsilon],
+                loss_fit2_loss_mainregion_max[sigma][epsilon]],
+            [loss_fit1_loss_mainregion_err[sigma][epsilon],
+                loss_fit2_loss_mainregion_err[sigma][epsilon]],
+            ["D loss mainregion FIT1", "D loss mainregion FIT2"])
+
         plot_losses(
-            ("Comparison of loss measures (ANGLESCAN with D FITS),\n" +
+            ("Comparison of loss measures (mainregion with D FITS),\n" +
                         "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
                         format(sigma, epsilon[2])),
-            ("img/loss/loss_anglescan_and_Dfits_sig{:2.2f}_eps{:2.0f}.png".
+            ("img/loss/loss_mainregion_and_Dfits_sig{:2.2f}_eps{:2.0f}.png".
                         format(sigma, epsilon[2])),
             n_turns,
-            [loss_anglescan[sigma][epsilon]],
-            ["Anglescan loss"],
+            [loss_mainregion[sigma][epsilon]],
+            ["Mainregion loss"],
             [loss_D_fit1[sigma][epsilon][N] 
                 for N in loss_D_fit1[sigma][epsilon]] + 
                 [loss_D_fit2[sigma][epsilon][N] 
@@ -936,45 +935,45 @@ for sigma in sigmas:
                 ["D loss FIT2, N $= {}$".format(N)
                 for N in loss_D_fit2[sigma][epsilon]])
 
-        ### Anglescan Fit and D Fits
         plot_losses(
-            ("Comparison of loss measures (angscan, angscan fits, D fits),\n" +
+            ("Comparison of loss measures (loss all, loss all fits, D fits),\n" +
                 "$\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
                         format(sigma, epsilon[2])),
-            ("img/loss/loss_anglescan_and_allfits_sig{:2.2f}_eps{:2.0f}.png".
+            ("img/loss/loss_all_and_allfits_sig{:2.2f}_eps{:2.0f}.png".
                         format(sigma, epsilon[2])),
             n_turns,
-            [loss_anglescan[sigma][epsilon]],
-            ["Anglescan loss"],
+            [loss_all[sigma][epsilon]],
+            ["All loss"],
             [loss_D_fit1[sigma][epsilon][N] 
                 for N in loss_D_fit1[sigma][epsilon]] + 
                 [loss_D_fit2[sigma][epsilon][N] 
                 for N in loss_D_fit2[sigma][epsilon]] +
-                [loss_anglescan_fit1[sigma][epsilon],
-                loss_anglescan_fit2[sigma][epsilon]],
+                [loss_fit1_loss_all[sigma][epsilon],
+                loss_fit2_loss_all[sigma][epsilon]],
             [loss_D_fit1_min[sigma][epsilon][N] 
                 for N in loss_D_fit1_min[sigma][epsilon]] + 
                 [loss_D_fit2_min[sigma][epsilon][N] 
                 for N in loss_D_fit2_min[sigma][epsilon]] +
-                [loss_anglescan_fit1_min[sigma][epsilon],
-                loss_anglescan_fit2_min[sigma][epsilon]],
+                [loss_fit1_loss_all_min[sigma][epsilon],
+                loss_fit2_loss_all_min[sigma][epsilon]],
             [loss_D_fit1_max[sigma][epsilon][N] 
                 for N in loss_D_fit1_max[sigma][epsilon]] + 
                 [loss_D_fit2_max[sigma][epsilon][N] 
                 for N in loss_D_fit2_max[sigma][epsilon]] +
-                [loss_anglescan_fit1_max[sigma][epsilon],
-                loss_anglescan_fit2_max[sigma][epsilon]],
+                [loss_fit1_loss_all_max[sigma][epsilon],
+                loss_fit2_loss_all_max[sigma][epsilon]],
             [loss_D_fit1_err[sigma][epsilon][N] 
                 for N in loss_D_fit1_err[sigma][epsilon]] + 
                 [loss_D_fit2_err[sigma][epsilon][N] 
                 for N in loss_D_fit2_err[sigma][epsilon]] +
-                [loss_anglescan_fit1_err[sigma][epsilon],
-                loss_anglescan_fit2_err[sigma][epsilon]],
+                [loss_fit1_loss_all_err[sigma][epsilon],
+                loss_fit2_loss_all_err[sigma][epsilon]],
             ["D loss FIT1, N $= {}$".format(N)
                 for N in loss_D_fit1[sigma][epsilon]] +
                 ["D loss FIT2, N $= {}$".format(N)
                 for N in loss_D_fit2[sigma][epsilon]] +
-                ["D loss anglescan FIT1", "D loss anglescan FIT2"])
+                ["D loss all FIT1", "D loss all FIT2"])
+
         
 ################################################################################
 ################################################################################
