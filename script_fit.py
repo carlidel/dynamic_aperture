@@ -137,58 +137,6 @@ for epsilon in dynamic_aperture:
     fit_parameters1[epsilon] = fit_parameters_epsilon
 
 #%%
-print("Fit on Partitions2")
-
-dA = 0.0001
-A_max = 0.01
-A_min = 0.001 + dA ### under this value it doesn't converge
-
-fit_parameters2 = {}
-best_fit_parameters2 = {}
-
-for epsilon in dynamic_aperture:
-    print(epsilon)
-    # fit2
-    fit_parameters_epsilon = {}
-    best_fit_parameters_epsilon = {}
-
-    for partition_list in partition_lists:
-        fit = {}
-        best = {}
-        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
-            scale_search = 1.
-            print(scale_search)
-            fit[angle] = non_linear_fit2(
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                n_turns,
-                A_min,
-                A_max * scale_search,
-                dA * scale_search)
-            best[angle] = select_best_fit2(fit[angle])
-            ### Is this a naive minimum in the chi squared?
-            while (best[angle][4] >= A_max * scale_search - dA * scale_search
-                   and scale_search <= 1e30):
-                print("Minimum naive! Increase scale_search!")
-                scale_search *= 10.
-                if scale_search > 1e30:
-                    print("Maximum scale reached! This will be the last fit.")
-                print(scale_search)
-                fit[angle] = non_linear_fit2(
-                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
-                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                    n_turns,
-                    A_min,
-                    A_max * scale_search,
-                    dA * scale_search)
-                best[angle] = select_best_fit2(fit[angle])
-        fit_parameters_epsilon[len(partition_list) - 1] = fit
-        best_fit_parameters_epsilon[len(partition_list) - 1] = best
-
-    fit_parameters2[epsilon] = fit_parameters_epsilon
-    best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
-
-#%%
 print("final form of fit2.")
 
 da = 0.0001
@@ -217,6 +165,29 @@ for epsilon in dynamic_aperture:
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
     fit_parameters2[epsilon] = fit_parameters_epsilon
+
+#%%
+print("fixed k fit2 naive.")
+k_values = [0.05, 0.1, 0.15, 0.2, 0.25,
+            0.3, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.25]#, 1.5, 2.0, 3.0]
+                                                              # fails from here
+best_fit_parameters2_fixedk_naive = {}
+
+for k in k_values:
+    best_fit_parameters_k = {}
+    for epsilon in dynamic_aperture:
+        best_fit_parameters_epsilon = {}
+        for partition_list in partition_lists:
+            best = {}
+            for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+                best[angle] = non_linear_fit2_fixedk_naive(
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                    n_turns,
+                    k)
+            best_fit_parameters_epsilon[len(partition_list) - 1] = best
+        best_fit_parameters_k[epsilon] = best_fit_parameters_epsilon
+    best_fit_parameters2_fixedk_naive[k] = best_fit_parameters_k
 
 #%%
 print("fixed k fit2.")
@@ -302,6 +273,18 @@ for epsilon in best_fit_parameters2:
                             dynamic_aperture)
 
 #%%
+print("Plot fits from simulation 2 fixed k NAIVE.")
+for k in best_fit_parameters2_fixedk_naive:
+    for epsilon in best_fit_parameters2_fixedk_naive[k]:
+        print(epsilon)
+        #for n_angles in best_fit_parameters1[epsilon]:
+        for angle in best_fit_parameters2_fixedk_naive[k][epsilon][1]:
+            plot_fit_basic2(
+                best_fit_parameters2_fixedk_naive[k][epsilon][1][angle],
+                1, epsilon, angle, n_turns, dynamic_aperture,
+                "img/fit/fit2_fixk_naive{:.2f}_".format(k))
+
+#%%
 print("Plot fits from simulation 2 fixed k.")
 for k in best_fit_parameters2_fixedk:
     for epsilon in best_fit_parameters2_fixedk[k]:
@@ -342,9 +325,11 @@ for epsilon in fit_parameters2_fixedk[0.33]:
 print("Every chi squared fit2 fixed k case")
 for epsilon in fit_parameters2_fixedk[0.33]:
     for angle in fit_parameters2_fixedk[0.33][epsilon][1]:
-        plot_chi_squared2_multiple(fit_parameters2_fixedk, k_values,
+        plot_chi_squared2_multiple(fit_parameters2[epsilon][1][angle],
+                                   fit_parameters2_fixedk, k_values,
                                    epsilon, 1, angle)
 
+###############################################################################
 #%%
 print("Fit1 param evolution over epsilon.")
 temp = list(best_fit_parameters1.keys())[0]

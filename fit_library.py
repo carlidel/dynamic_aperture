@@ -39,10 +39,10 @@ n_turns = np.array([
 
 # Partition list for basic angle partitioning
 partition_lists = [
-    [0, np.pi / 2],  # Always always keep this one
-    [0, np.pi / 4, np.pi / 2],
+    [0, np.pi / 2]#,  # Always always keep this one
+    #[0, np.pi / 4, np.pi / 2],
     #[0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
-    [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]
+    #[0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]
     # [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
     # [
     #     0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12,
@@ -280,6 +280,8 @@ def FIT2_linearized_err_min(x, k, k_err, B, B_err, a, a_err):
 
 def non_linear_fit2_fixed_a(data, err_data, n_turns, a, da, p0k=0, p0B=0):
     fit2 = lambda x, k, B: B - k * np.log(np.log(float(a) * x))
+    chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 2)) *
+                        np.sum(((y - fit2(x, popt[0], popt[1])) / sigma)**2))
     working_data = {}
     working_err_data = {}
     # Preprocessing the data
@@ -293,11 +295,15 @@ def non_linear_fit2_fixed_a(data, err_data, n_turns, a, da, p0k=0, p0B=0):
                            sigma=[working_err_data[i] for i in n_turns])
     return(popt[0], np.sqrt(pcov[0][0]),
            popt[1], np.sqrt(pcov[1][1]),
-           a, da)
+           a, da,
+           chi2(n_turns, [working_data[i] for i in n_turns],
+                [working_err_data[i] for i in n_turns], popt))
 
 
 def non_linear_fit2_fixed_a_and_k(data, err_data, n_turns, a, k, p0B=0):
     fit2 = lambda x, B: B - k * np.log(np.log(float(a) * x))
+    chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 1)) *
+                        np.sum(((y - fit2(x, popt[0])) / sigma)**2))
     working_data = {}
     working_err_data = {}
     # Preprocessing the data
@@ -311,7 +317,9 @@ def non_linear_fit2_fixed_a_and_k(data, err_data, n_turns, a, k, p0B=0):
                            sigma=[working_err_data[i] for i in n_turns])
     return(k, 0.,
            popt[0], np.sqrt(pcov[0][0]),
-           a, 0.)
+           a, 0.,
+           chi2(n_turns, [working_data[i] for i in n_turns],
+                [working_err_data[i] for i in n_turns], popt))
             
 
 def non_linear_fit2(data, err_data, n_turns, a_min, a_max, da, p0k=0, p0B=0):
@@ -430,7 +438,7 @@ def non_linear_fit2_final_fixedk(data, err_data, n_turns,
     return all_fits, best_fit
 
 
-def non_linear_fit2_fixedk_naive(data, err_data, n_turns, p0B=1., p0a=1., k=0.33):
+def non_linear_fit2_fixedk_naive(data, err_data, n_turns, k, p0B=1., p0a=1.):
     fit2 = lambda x, B, a: B - k * np.log(np.log(float(a)*x))
     working_data = {}
     working_err_data = {}
@@ -445,7 +453,7 @@ def non_linear_fit2_fixedk_naive(data, err_data, n_turns, p0B=1., p0a=1., k=0.33
                                [working_data[i] for i in n_turns],
                                p0=[p0B, p0a],
                                sigma=[working_err_data[i] for i in n_turns],
-                               bounds=([-np.inf, 0],
+                               bounds=([-np.inf, 1 / n_turns[0]],
                                        [np.inf, np.inf]))
         return (k,
                 0.,
@@ -454,7 +462,7 @@ def non_linear_fit2_fixedk_naive(data, err_data, n_turns, p0B=1., p0a=1., k=0.33
                 popt[1],
                 np.sqrt(pcov[1][1]))
     except RuntimeError:
-        print("FAIL")
+        print("FAIL", k)
         return(0., 0., 0., 0., 0., 0.)
 
 
@@ -465,7 +473,8 @@ def select_best_fit2(parameters):
             best[1][0][1],
             np.sqrt(best[1][1][1][1]),
             best[0], 
-            best[1][3])
+            best[1][3],
+            best[1][2]) # THE CHI SQUARED
 
 
 def select_best_fit2_fixedk(parameters):
@@ -475,7 +484,9 @@ def select_best_fit2_fixedk(parameters):
             best[1][0][0], # B parameter
             np.sqrt(best[1][1][0][0]), # B error
             best[0], # a parameter
-            best[1][3]) # a error
+            best[1][3], # a error
+            best[1][2]) # THE CHI SQUARED
+
 
 def pass_params_fit2(x, params):
     return FIT2_linearized(x, params[0], params[2], params[4])
@@ -830,8 +841,15 @@ def plot_chi_squared2(fit_params, epsilon, n_partitions=1, angle=np.pi / 4,
 
 
 def plot_chi_squared2_multiple(
-                    fit_params, k_values, eps, n_part, angle,
+                    fit_params_basic, fit_params, k_values, eps, n_part, angle,
                     filename="img/fit/fit2_fixedk_comparison_chisquared"):
+    plt.plot(
+        list(fit_params_basic.keys()),
+        [x[2] for x in list(fit_params_basic.values())],
+        marker="x",
+        markersize=0.5,
+        linewidth=0.5,
+        label="Free k")
     for k in k_values:
         plt.plot(
             list(fit_params[k][eps][n_part][angle].keys()),
