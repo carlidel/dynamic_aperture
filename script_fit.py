@@ -114,23 +114,27 @@ k_max = 7.
 dk = 0.1
 n_iterations = 7
 
+fit_parameters1 = {}
 best_fit_parameters1 = {}
 
 for epsilon in dynamic_aperture:
     print(epsilon)
     # fit1
+    fit_parameters_epsilon = {}
     best_fit_parameters_epsilon = {}
 
     for partition_list in partition_lists:
+        fit = {}
         best = {}
         for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
-            best[angle] = non_linear_fit1_iterated(
+            fit[angle], best[angle] = non_linear_fit1_iterated(
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
                 n_turns, k_min, k_max, dk, n_iterations)
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
+        fit_parameters_epsilon[len(partition_list) - 1] = fit
     best_fit_parameters1[epsilon] = best_fit_parameters_epsilon
-
+    fit_parameters1[epsilon] = fit_parameters_epsilon
 
 #%%
 print("Fit on Partitions2")
@@ -193,40 +197,57 @@ a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
 a_bound = 1e10
 a_default = n_turns[-1]
 
+fit_parameters2 = {}
 best_fit_parameters2 = {}
 
 for epsilon in dynamic_aperture:
     print(epsilon)
     best_fit_parameters_epsilon = {}
-
+    fit_parameters_epsilon = {}
     for partition_list in partition_lists:
+        fit = {}
         best = {}
         for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
-            best[angle] = non_linear_fit2_final(
+            fit[angle], best[angle] = non_linear_fit2_final(
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
                 n_turns,
                 a_min, a_max, da, a_bound, a_default)
+        fit_parameters_epsilon[len(partition_list) - 1] = fit
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
     best_fit_parameters2[epsilon] = best_fit_parameters_epsilon
+    fit_parameters2[epsilon] = fit_parameters_epsilon
 
 #%%
 print("fixed k fit2.")
 
+
+da = 0.0001
+a_max = 0.01
+a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
+a_bound = 1e10
+a_default = n_turns[-1]
+
+fit_parameters2_fixedk = {}
 best_fit_parameters2_fixedk = {}
 
 for epsilon in dynamic_aperture:
     print(epsilon)
+    fit_parameters_epsilon = {}
     best_fit_parameters_epsilon = {}
-    
     for partition_list in partition_lists:
+        fit = {}
         best = {}
         for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
-            best[angle] = non_linear_fit2_fixedk(
+            fit[angle], best[angle] = non_linear_fit2_final_fixedk(
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
                 dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                n_turns)
+                n_turns,
+                a_min, a_max, da, a_bound, a_default,
+                0.33)
+        fit_parameters_epsilon[len(partition_list) - 1] = fit
         best_fit_parameters_epsilon[len(partition_list) - 1] = best
+    fit_parameters2_fixedk[epsilon] = fit_parameters_epsilon
     best_fit_parameters2_fixedk[epsilon] = best_fit_parameters_epsilon
 
 #%%
@@ -265,20 +286,27 @@ for epsilon in best_fit_parameters2_fixedk:
 #%%
 print("Compare chi squared fits1.")
 for epsilon in fit_parameters1:
-    for angle in fit_parameters1[epsilon][1]:
-        plot_chi_squared1(fit_parameters1[epsilon][1][angle],
-                          epsilon[2],
-                          1,
-                          angle)
+    for N in fit_parameters1[epsilon]:
+        for angle in fit_parameters1[epsilon][N]:
+            plot_chi_squared1(fit_parameters1[epsilon][N][angle],
+                              epsilon[2], N, angle)
 
 #%%
 print("Compare chi squared fits2.")
 for epsilon in fit_parameters2:
-    for angle in fit_parameters2[epsilon][1]:
-        plot_chi_squared2(fit_parameters2[epsilon][1][angle],
-                          epsilon[2],
-                          1,
-                          angle)
+    for N in fit_parameters2[epsilon]:
+        for angle in fit_parameters2[epsilon][N]:
+            plot_chi_squared2(fit_parameters2[epsilon][N][angle],
+                              epsilon[2], N, angle)
+
+#%%
+print("Compare chi squared fits2 fixed k")
+for epsilon in fit_parameters2_fixedk:
+    for N in fit_parameters2_fixedk[epsilon]:
+        for angle in fit_parameters2_fixedk[epsilon][N]:
+            plot_chi_squared2(fit_parameters2_fixedk[epsilon][N][angle],
+                              epsilon[2], N, angle,
+                              "img/fit/fit2_fixk_chisquared")
 
 #%%
 print("Fit1 param evolution over epsilon.")
@@ -565,7 +593,7 @@ for sigma in loss_all:
     print(sigma)
     fit1_loss_all_sigma = {}
     for epsilon in loss_all[sigma]:
-        fit1_loss_all_sigma[epsilon] = non_linear_fit1_iterated(
+        _, fit1_loss_all_sigma[epsilon] = non_linear_fit1_iterated(
             dict(zip(n_turns,
                 D_from_loss_all[sigma][epsilon])),
             dict(zip(n_turns,
@@ -639,7 +667,7 @@ for sigma in loss_all:
     print(sigma)
     fit2_loss_all_sigma = {}
     for epsilon in loss_all[sigma]:
-        fit2_loss_all_sigma[epsilon] = non_linear_fit2_final(
+        _, fit2_loss_all_sigma[epsilon] = non_linear_fit2_final(
             dict(zip(n_turns,
                 D_from_loss_all[sigma][epsilon])),
             dict(zip(n_turns,
@@ -712,7 +740,7 @@ for sigma in loss_mainregion:
     print(sigma)
     fit1_loss_mainregion_sigma = {}
     for epsilon in loss_mainregion[sigma]:
-        fit1_loss_mainregion_sigma[epsilon] = non_linear_fit1_iterated(
+        _, fit1_loss_mainregion_sigma[epsilon] = non_linear_fit1_iterated(
             dict(zip(n_turns,
                 D_from_loss_mainregion[sigma][epsilon])),
             dict(zip(n_turns,
@@ -786,7 +814,7 @@ for sigma in loss_mainregion:
     print(sigma)
     fit2_loss_mainregion_sigma = {}
     for epsilon in loss_mainregion[sigma]:
-        fit2_loss_mainregion_sigma[epsilon] = non_linear_fit2_final(
+        _, fit2_loss_mainregion_sigma[epsilon] = non_linear_fit2_final(
             dict(zip(n_turns,
                 D_from_loss_mainregion[sigma][epsilon])),
             dict(zip(n_turns,
@@ -1104,7 +1132,7 @@ for label in lhc_data:
                                                 sigma_filler(seed, 0.05),
                                                 np.asarray(sorted(seed.keys())),
                                                 k_min, k_max,
-                                                dk, n_iterations))
+                                                dk, n_iterations)[1])
         best_fit_lhc1_label[i] = best_fit_lhc1_correction
     best_fit_lhc1[label] = best_fit_lhc1_label
 
@@ -1132,7 +1160,7 @@ for label in lhc_data:
                 non_linear_fit2_final(seed,
                                       sigma_filler(seed, 0.05),
                                       np.asarray(sorted(seed.keys())),
-                                      a_min, a_max, da, a_bound, a_default))
+                                      a_min, a_max, da, a_bound, a_default)[1])
         best_fit_lhc2_label[i] = best_fit_lhc2_correction
     best_fit_lhc2[label] = best_fit_lhc2_label
 
@@ -1262,7 +1290,7 @@ n_iterations = 7
 nek_fit1 = {}
 for label in nek_D:
     print(label)
-    nek_fit1[label] = non_linear_fit1_iterated(
+    _, nek_fit1[label] = non_linear_fit1_iterated(
                             dict(zip(nek_D[label][0], nek_D[label][1])),
                             dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
                             nek_D[label][0],
@@ -1290,7 +1318,7 @@ nek_fit2 = {}
 for label in nek_D:
     print(label)
     a_default = nek_D[label][0][-1]
-    nek_fit2[label] = non_linear_fit2_final(
+    _, nek_fit2[label] = non_linear_fit2_final(
             dict(zip(nek_D[label][0], nek_D[label][1])),
             dict(zip(nek_D[label][0], nek_D[label][1] * 0.001)),
             nek_D[label][0],

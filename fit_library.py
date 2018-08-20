@@ -216,15 +216,15 @@ def non_linear_fit1_final(data, err_data, n_turns,
 
 def non_linear_fit1_iterated(data, err_data, n_turns,
                              k_min, k_max, dk, n_iterations, p0D=0, p0B=0):
-    best_fit = select_best_fit1(non_linear_fit1(
-        data, err_data, n_turns,
-        k_min, k_max, dk, p0D, p0B))
+    all_fits = non_linear_fit1(data, err_data, n_turns,
+                               k_min, k_max, dk, p0D, p0B)
+    best_fit = select_best_fit1(all_fits)
     for i in range(n_iterations):
         best_fit = select_best_fit1(non_linear_fit1(
             data, err_data, n_turns,
             best_fit[4] - dk, best_fit[4] + dk, dk / 10, p0D, p0B))
         dk /= 10
-    return best_fit
+    return all_fits, best_fit
 
 
 def select_best_fit1(parameters):
@@ -294,6 +294,24 @@ def non_linear_fit2_fixed_a(data, err_data, n_turns, a, da, p0k=0, p0B=0):
     return(popt[0], np.sqrt(pcov[0][0]),
            popt[1], np.sqrt(pcov[1][1]),
            a, da)
+
+
+def non_linear_fit2_fixed_a_and_k(data, err_data, n_turns, a, k, p0B=0):
+    fit2 = lambda x, B: B - k * np.log(np.log(float(a) * x))
+    working_data = {}
+    working_err_data = {}
+    # Preprocessing the data
+    for label in data:
+        working_data[label] = np.log(np.copy(data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) * 
+                                            np.copy(err_data[label]))
+    popt, pcov = curve_fit(fit2,
+                           n_turns, [working_data[i] for i in n_turns],
+                           p0=[p0B],
+                           sigma=[working_err_data[i] for i in n_turns])
+    return(k, 0.,
+           popt[1], np.sqrt(pcov[1][1]),
+           a, 0.)
             
 
 def non_linear_fit2(data, err_data, n_turns, a_min, a_max, da, p0k=0, p0B=0):
@@ -330,30 +348,89 @@ def non_linear_fit2(data, err_data, n_turns, a_min, a_max, da, p0k=0, p0B=0):
     return explore_a
 
 
+def non_linear_fit2_fixedk(data, err_data, n_turns, a_min, a_max, da, k, p0B=0):
+    fit2 = lambda x, B: B - k * np.log(np.log(a * x))
+    chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 3)) *
+                        np.sum(((y - fit2(x, popt[0])) / sigma)**2))
+    explore_a = {}
+
+    working_data = {}
+    working_err_data = {}
+    # Preprocessing the data
+    for label in data:
+        working_data[label] = np.log(np.copy(data[label]))
+        working_err_data[label] = ((1 / np.copy(data[label])) * 
+                                            np.copy(err_data[label]))
+
+    for number in np.arange(a_min, a_max + da, da):
+        a = number
+        try:
+            popt, pcov = curve_fit(fit2,
+                                   n_turns, [working_data[i] for i in n_turns],
+                                   p0=[p0B],
+                                   sigma=[working_err_data[i] for i in n_turns])
+            explore_a[a] = (popt, 
+                            pcov,
+                            chi2(n_turns,
+                                 [working_data[i] for i in n_turns],
+                                 [working_err_data[i] for i in n_turns], 
+                                 popt), 
+                            da,
+                            k)
+        except RuntimeError:
+            print("Runtime error with a = {}".format(a))
+    assert len(explore_a) > 0
+    return explore_a
+
+
 def non_linear_fit2_final(data, err_data, n_turns,
                           a_min, a_max, da, a_bound, a_default, p0k=0, p0B=0):
     scale_search = 1
     print(scale_search)
-    best_fit = select_best_fit2(non_linear_fit2(data, err_data, n_turns,
-                                                a_min, a_max, da,
-                                                p0k, p0B))
+    all_fits = non_linear_fit2(data, err_data, n_turns,
+                               a_min, a_max, da, p0k, p0B)
+    best_fit = select_best_fit2(all_fits)
     while (best_fit[4] >= a_max * scale_search - da * scale_search and
                           scale_search <= a_bound):
         scale_search *= 10
         print(scale_search)
         if scale_search > a_bound:
             print("Set a = {}".format(a_default))
-            return non_linear_fit2_fixed_a(data, err_data, n_turns,
+            return all_fits, non_linear_fit2_fixed_a(data, err_data, n_turns,
                                            float(a_default), 0.,
                                            p0k, p0B)
-        best_fit = select_best_fit2(non_linear_fit2(data, err_data, n_turns,
-                                                    a_min, a_max * scale_search,
-                                                    da * scale_search,
-                                                    p0k, p0B))
-    return best_fit
+        all_fits = non_linear_fit2(data, err_data, n_turns,
+                                   a_min, a_max * scale_search,
+                                   da * scale_search, p0k, p0B)
+        best_fit = select_best_fit2(all_fits)
+    return all_fits, best_fit
 
 
-def non_linear_fit2_fixedk(data, err_data, n_turns, p0B=1., p0a=1., k=0.33):
+def non_linear_fit2_final_fixedk(data, err_data, n_turns,
+                                 a_min, a_max, da, a_bound, a_default,
+                                 k, p0B=0):
+    scale_search = 1
+    print(scale_search)
+    all_fits = non_linear_fit2_fixedk(data, err_data, n_turns,
+                                      a_min, a_max, da, k, p0B)
+    best_fit = select_best_fit2_fixedk(all_fits)
+    while (best_fit[4] >= a_max * scale_search - da * scale_search and
+                          scale_search <= a_bound):
+        scale_search *= 10
+        print(scale_search)
+        if scale_search > a_bound:
+            print("Set a = {}".format(a_default))
+            return all_fits, non_linear_fit2_fixed_a_and_k(
+                                                    data, err_data, n_turns,
+                                                    float(a_default), k, p0B)
+        all_fits = non_linear_fit2_fixedk(data, err_data, n_turns,
+                                          a_min, a_max * scale_search,
+                                          da * scale_search, k, p0B)
+        best_fit = select_best_fit2_fixedk(all_fits)
+    return all_fits, best_fit
+
+
+def non_linear_fit2_fixedk_naive(data, err_data, n_turns, p0B=1., p0a=1., k=0.33):
     fit2 = lambda x, B, a: B - k * np.log(np.log(float(a)*x))
     working_data = {}
     working_err_data = {}
@@ -378,18 +455,27 @@ def non_linear_fit2_fixedk(data, err_data, n_turns, p0B=1., p0a=1., k=0.33):
                 np.sqrt(pcov[1][1]))
     except RuntimeError:
         print("FAIL")
-        return(0.,0.,0.,0.,0.,0.)
+        return(0., 0., 0., 0., 0., 0.)
 
 
 def select_best_fit2(parameters):
     best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
     return (best[1][0][0], 
-            np.sqrt(best[1][1][0][0]), 
+            np.sqrt(best[1][1][0][0]),
             best[1][0][1],
-            np.sqrt(best[1][1][1][1]), 
+            np.sqrt(best[1][1][1][1]),
             best[0], 
             best[1][3])
 
+
+def select_best_fit2_fixedk(parameters):
+    best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
+    return (best[1][4], # k parameter
+            0., # k error
+            best[1][0][0], # B parameter
+            np.sqrt(best[1][1][0][0]), # B error
+            best[0], # a parameter
+            best[1][3]) # a error
 
 def pass_params_fit2(x, params):
     return FIT2_linearized(x, params[0], params[2], params[4])
@@ -698,10 +784,8 @@ def fit_parameters_evolution2(fit_parameters, label="plot"):
     plt.clf()
 
 
-def plot_chi_squared1(fit_params,
-                      epsilon,
-                      n_partitions=1,
-                      angle=np.pi / 4):
+def plot_chi_squared1(fit_params, epsilon, n_partitions=1, angle=np.pi / 4,
+                      filename="img/fit/fit1_chisquared"):
     plt.plot(
         list(fit_params.keys()), 
         [x[2] for x in list(fit_params.values())],
@@ -715,16 +799,14 @@ def plot_chi_squared1(fit_params,
         format(epsilon, n_partitions, angle))
     plt.tight_layout()
     plt.savefig(
-        "img/fit/fit1_chisquared_eps{:2.0f}_npart{}_central{:2.2f}.png".
+        filename + "_eps{:2.0f}_npart{}_central{:2.2f}.png".
         format(epsilon, n_partitions, angle),
         dpi=DPI)
     plt.clf()
 
 
-def plot_chi_squared2(fit_params,
-                      epsilon,
-                      n_partitions=1,
-                      angle=np.pi / 4):
+def plot_chi_squared2(fit_params, epsilon, n_partitions=1, angle=np.pi / 4,
+                      filename="img/fit/fit2_chisquared"):
     plt.plot(
         list(fit_params.keys()),
         [x[2] for x in list(fit_params.values())],
@@ -732,7 +814,7 @@ def plot_chi_squared2(fit_params,
         markersize=0.5,
         linewidth=0.5)
     plt.xlabel("a value")
-    plt.xscale("log")
+    #plt.xscale("log")
     plt.ylabel("Chi-Squared value")
     plt.yscale("log")
     plt.grid(True)
@@ -741,7 +823,7 @@ def plot_chi_squared2(fit_params,
         format(epsilon, n_partitions, angle))
     plt.tight_layout()
     plt.savefig(
-        "img/fit/fit2_chisquared_eps{:2.0f}_npart{}_central{:2.2f}.png".
+        filename + "_eps{:2.0f}_npart{}_central{:2.2f}.png".
         format(epsilon, n_partitions, angle),
         dpi=DPI)
     plt.clf()
