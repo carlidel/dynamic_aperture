@@ -221,6 +221,8 @@ for epsilon in dynamic_aperture:
 #%%
 print("fixed k fit2.")
 
+k_values = [0.05, 0.1, 0.15, 0.2, 0.25,
+            0.3, 0.33, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.25, 1.5, 2.0, 3.0]
 
 da = 0.0001
 a_max = 0.01
@@ -230,25 +232,52 @@ a_default = n_turns[-1]
 
 fit_parameters2_fixedk = {}
 best_fit_parameters2_fixedk = {}
+fit2_fixedk_converged = {}
 
-for epsilon in dynamic_aperture:
-    print(epsilon)
-    fit_parameters_epsilon = {}
-    best_fit_parameters_epsilon = {}
-    for partition_list in partition_lists:
-        fit = {}
-        best = {}
-        for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
-            fit[angle], best[angle] = non_linear_fit2_final_fixedk(
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
-                dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
-                n_turns,
-                a_min, a_max, da, a_bound, a_default,
-                0.33)
-        fit_parameters_epsilon[len(partition_list) - 1] = fit
-        best_fit_parameters_epsilon[len(partition_list) - 1] = best
-    fit_parameters2_fixedk[epsilon] = fit_parameters_epsilon
-    best_fit_parameters2_fixedk[epsilon] = best_fit_parameters_epsilon
+for k in k_values:
+    fit_parameters_k = {}
+    best_fit_parameters_k = {}
+    converged_k = {}
+    for epsilon in dynamic_aperture:
+        print(k, epsilon)
+        fit_parameters_epsilon = {}
+        best_fit_parameters_epsilon = {}
+        converged_epsilon = {}
+        for partition_list in partition_lists:
+            fit = {}
+            best = {}
+            converged = {}
+            for angle in dynamic_aperture[epsilon][len(partition_list) - 1]:
+                fit[angle], best[angle] = non_linear_fit2_final_fixedk(
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][0],
+                    dynamic_aperture[epsilon][len(partition_list) - 1][angle][1],
+                    n_turns,
+                    a_min, a_max, da, a_bound, a_default,
+                    k)
+                converged[angle] = (best[angle][5] != 0)
+            fit_parameters_epsilon[len(partition_list) - 1] = fit
+            best_fit_parameters_epsilon[len(partition_list) - 1] = best
+            converged_epsilon[len(partition_list) - 1] = converged
+        fit_parameters_k[epsilon] = fit_parameters_epsilon
+        best_fit_parameters_k[epsilon] = best_fit_parameters_epsilon
+        converged_k[epsilon] = converged_epsilon
+    fit_parameters2_fixedk[k] = fit_parameters_k
+    best_fit_parameters2_fixedk[k] = best_fit_parameters_k
+    fit2_fixedk_converged[k] = converged_k
+
+#%%
+print("Tell me which 'k' values always converge!")
+k_converged = []
+for k in fit2_fixedk_converged:
+    flag = True
+    for epsilon in fit2_fixedk_converged[k]:
+        for N in fit2_fixedk_converged[k][epsilon]:
+            for angle in fit2_fixedk_converged[k][epsilon][N]:
+                flag = (flag and fit2_fixedk_converged[k][epsilon][N][angle])
+    k_converged.append(flag)
+
+fit2_fixedk_converged_summary = dict(zip(k_values, k_converged))
+print(fit2_fixedk_converged_summary)
 
 #%%
 print("Plot fits from simulation 1.")
@@ -274,14 +303,15 @@ for epsilon in best_fit_parameters2:
 
 #%%
 print("Plot fits from simulation 2 fixed k.")
-for epsilon in best_fit_parameters2_fixedk:
-    print(epsilon)
-    #for n_angles in best_fit_parameters1[epsilon]:
-    for N in best_fit_parameters2_fixedk[epsilon]:
-        for angle in best_fit_parameters2_fixedk[epsilon][N]:
-            plot_fit_basic2(best_fit_parameters2_fixedk[epsilon][N][angle],
-                            N, epsilon, angle, n_turns,
-                            dynamic_aperture, "img/fit/fit2_fixk_")
+for k in best_fit_parameters2_fixedk:
+    for epsilon in best_fit_parameters2_fixedk[k]:
+        print(epsilon)
+        #for n_angles in best_fit_parameters1[epsilon]:
+        for angle in best_fit_parameters2_fixedk[k][epsilon][1]:
+            plot_fit_basic2(
+                best_fit_parameters2_fixedk[k][epsilon][1][angle],
+                1, epsilon, angle, n_turns, dynamic_aperture,
+                "img/fit/fit2_fixk{:.2f}_".format(k))
 
 #%%
 print("Compare chi squared fits1.")
@@ -301,12 +331,19 @@ for epsilon in fit_parameters2:
 
 #%%
 print("Compare chi squared fits2 fixed k")
-for epsilon in fit_parameters2_fixedk:
-    for N in fit_parameters2_fixedk[epsilon]:
-        for angle in fit_parameters2_fixedk[epsilon][N]:
-            plot_chi_squared2(fit_parameters2_fixedk[epsilon][N][angle],
+for epsilon in fit_parameters2_fixedk[0.33]:
+    for N in fit_parameters2_fixedk[0.33][epsilon]:
+        for angle in fit_parameters2_fixedk[0.33][epsilon][N]:
+            plot_chi_squared2(fit_parameters2_fixedk[0.33][epsilon][N][angle],
                               epsilon[2], N, angle,
                               "img/fit/fit2_fixk_chisquared")
+
+#%%
+print("Every chi squared fit2 fixed k case")
+for epsilon in fit_parameters2_fixedk[0.33]:
+    for angle in fit_parameters2_fixedk[0.33][epsilon][1]:
+        plot_chi_squared2_multiple(fit_parameters2_fixedk, k_values,
+                                   epsilon, 1, angle)
 
 #%%
 print("Fit1 param evolution over epsilon.")

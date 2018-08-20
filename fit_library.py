@@ -310,7 +310,7 @@ def non_linear_fit2_fixed_a_and_k(data, err_data, n_turns, a, k, p0B=0):
                            p0=[p0B],
                            sigma=[working_err_data[i] for i in n_turns])
     return(k, 0.,
-           popt[1], np.sqrt(pcov[1][1]),
+           popt[0], np.sqrt(pcov[0][0]),
            a, 0.)
             
 
@@ -825,6 +825,34 @@ def plot_chi_squared2(fit_params, epsilon, n_partitions=1, angle=np.pi / 4,
     plt.savefig(
         filename + "_eps{:2.0f}_npart{}_central{:2.2f}.png".
         format(epsilon, n_partitions, angle),
+        dpi=DPI)
+    plt.clf()
+
+
+def plot_chi_squared2_multiple(
+                    fit_params, k_values, eps, n_part, angle,
+                    filename="img/fit/fit2_fixedk_comparison_chisquared"):
+    for k in k_values:
+        plt.plot(
+            list(fit_params[k][eps][n_part][angle].keys()),
+            [x[2] for x in list(fit_params[k][eps][n_part][angle].values())],
+            marker="o",
+            markersize=0.5,
+            linewidth=0.5,
+            label="$k = {:.2f}$".format(k))
+    plt.xlabel("a value")
+    plt.ylabel("Chi-Squared value")
+    plt.yscale("log")
+    plt.xscale("log")
+    plt.grid(True)
+    plt.legend(prop={"size":7}, ncol=2)
+    plt.title(
+        "FIT2 Chi-Squared evolution for different fixed k, $\epsilon = {:2.0f}$,\n number of partitions $= {}$, central angle $= {:2.2f}$".
+        format(eps[2], n_part, angle))
+    plt.tight_layout()
+    plt.savefig(
+        filename + "_eps{:2.0f}_npart{}_central{:2.2f}.png".
+        format(eps[2], n_part, angle),
         dpi=DPI)
     plt.clf()
 
