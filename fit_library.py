@@ -187,7 +187,7 @@ def non_linear_fit1(data, err_data, n_turns, k_min, k_max, dk, p0D=0, p0B=0):
 def non_linear_fit1_final(data, err_data, n_turns,
                           k_lim, dk, k_bound, p0D=0, p0B=0):
     scale_search = 1.
-    print(scale_search)
+    #print(scale_search)
     best_fit = select_best_fit1(non_linear_fit1(
         data, err_data, n_turns,
         -k_lim, k_lim, dk, p0D, p0B))
@@ -196,7 +196,7 @@ def non_linear_fit1_final(data, err_data, n_turns,
         while (best_fit[4] > (k_lim - dk) * scale_search and
                scale_search < k_bound):
             scale_search *= 10.
-            print(scale_search)
+            #print(scale_search)
             best_fit = select_best_fit1(non_linear_fit1(
                 data, err_data, n_turns, -k_lim,
                 k_lim * scale_search, dk * scale_search,
@@ -206,7 +206,7 @@ def non_linear_fit1_final(data, err_data, n_turns,
         while (best_fit[4] < (-k_lim + dk) * scale_search and
                scale_search < k_bound):
             scale_search *= 10.
-            print(scale_search)
+            #print(scale_search)
             best_fit = select_best_fit1(non_linear_fit1(
                 data, err_data, n_turns,
                 -k_lim * scale_search, k_lim,
@@ -300,7 +300,7 @@ def non_linear_fit2_fixed_a(data, err_data, n_turns, a, da, p0k=0, p0B=0):
                 [working_err_data[i] for i in n_turns], popt))
 
 
-def non_linear_fit2_fixed_a_and_k(data, err_data, n_turns, a, k, p0B=0):
+def non_linear_fit2_fixed_a_and_k(data, err_data, n_turns, a, k, k_err=0., p0B=0.):
     fit2 = lambda x, B: B - k * np.log(np.log(float(a) * x))
     chi2 = lambda x, y, sigma, popt: ((1 / (len(n_turns) - 1)) *
                         np.sum(((y - fit2(x, popt[0])) / sigma)**2))
@@ -315,7 +315,7 @@ def non_linear_fit2_fixed_a_and_k(data, err_data, n_turns, a, k, p0B=0):
                            n_turns, [working_data[i] for i in n_turns],
                            p0=[p0B],
                            sigma=[working_err_data[i] for i in n_turns])
-    return(k, 0.,
+    return(k, k_err,
            popt[0], np.sqrt(pcov[0][0]),
            a, 0.,
            chi2(n_turns, [working_data[i] for i in n_turns],
@@ -394,14 +394,14 @@ def non_linear_fit2_fixedk(data, err_data, n_turns, a_min, a_max, da, k, p0B=0):
 def non_linear_fit2_final(data, err_data, n_turns,
                           a_min, a_max, da, a_bound, a_default, p0k=0, p0B=0):
     scale_search = 1
-    print(scale_search)
+    #print(scale_search)
     all_fits = non_linear_fit2(data, err_data, n_turns,
                                a_min, a_max, da, p0k, p0B)
     best_fit = select_best_fit2(all_fits)
     while (best_fit[4] >= a_max * scale_search - da * scale_search and
                           scale_search <= a_bound):
         scale_search *= 10
-        print(scale_search)
+        #print(scale_search)
         if scale_search > a_bound:
             print("Set a = {}".format(a_default))
             return all_fits, non_linear_fit2_fixed_a(data, err_data, n_turns,
@@ -416,25 +416,25 @@ def non_linear_fit2_final(data, err_data, n_turns,
 
 def non_linear_fit2_final_fixedk(data, err_data, n_turns,
                                  a_min, a_max, da, a_bound, a_default,
-                                 k, p0B=0):
+                                 k, k_err=0., p0B=0.):
     scale_search = 1
-    print(scale_search)
+    #print(scale_search)
     all_fits = non_linear_fit2_fixedk(data, err_data, n_turns,
                                       a_min, a_max, da, k, p0B)
-    best_fit = select_best_fit2_fixedk(all_fits)
+    best_fit = select_best_fit2_fixedk(all_fits, k_err)
     while (best_fit[4] >= a_max * scale_search - da * scale_search and
                           scale_search <= a_bound):
         scale_search *= 10
-        print(scale_search)
+        #print(scale_search)
         if scale_search > a_bound:
             print("Set a = {}".format(a_default))
             return all_fits, non_linear_fit2_fixed_a_and_k(
                                                     data, err_data, n_turns,
-                                                    float(a_default), k, p0B)
+                                                    float(a_default), k, k_err, p0B)
         all_fits = non_linear_fit2_fixedk(data, err_data, n_turns,
                                           a_min, a_max * scale_search,
                                           da * scale_search, k, p0B)
-        best_fit = select_best_fit2_fixedk(all_fits)
+        best_fit = select_best_fit2_fixedk(all_fits, k_err)
     return all_fits, best_fit
 
 
@@ -466,6 +466,31 @@ def non_linear_fit2_fixedk_naive(data, err_data, n_turns, k, p0B=1., p0a=1.):
         return(0., 0., 0., 0., 0., 0.)
 
 
+def non_linear_fit2_doublescan(data, err_data, n_turns,
+                               k_min, dk, a_min, a_max, da, a_bound, a_default):
+    best_fit_list = []
+    k = k_min
+    print(k)
+    fit, best_fit = non_linear_fit2_final_fixedk(data, err_data, n_turns,
+                                                 a_min, a_max, da, a_bound,
+                                                 a_default, k, dk)
+    best_fit_list.append(best_fit)
+    k += dk
+    print(k)
+    fit, best_fit2 = non_linear_fit2_final_fixedk(data, err_data, n_turns,
+                                                 a_min, a_max, da, a_bound,
+                                                 a_default, k, dk)
+    best_fit_list.append(best_fit2)
+    while best_fit2[6] < best_fit[6] and best_fit2[5] != 0.:
+        best_fit = best_fit2
+        k += dk
+        print(k)
+        fit, best_fit2 = non_linear_fit2_final_fixedk(data, err_data, n_turns,
+                                                 a_min, a_max, da, a_bound,
+                                                 a_default, k, dk)
+        best_fit_list.append(best_fit2)
+    return fit, best_fit
+
 def select_best_fit2(parameters):
     best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
     return (best[1][0][0], 
@@ -477,10 +502,10 @@ def select_best_fit2(parameters):
             best[1][2]) # THE CHI SQUARED
 
 
-def select_best_fit2_fixedk(parameters):
+def select_best_fit2_fixedk(parameters, k_err = 0.):
     best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
     return (best[1][4], # k parameter
-            0., # k error
+            k_err, # k error
             best[1][0][0], # B parameter
             np.sqrt(best[1][1][0][0]), # B error
             best[0], # a parameter
@@ -950,6 +975,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$k$ value")
+    plt.grid(True)
     plt.title("FIT2 $k$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
@@ -969,6 +995,7 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
         markersize=1)
     plt.xlabel("$\epsilon$")
     plt.ylabel("$B$ value")
+    plt.grid(True)
     plt.title("FIT2 $B$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
@@ -989,6 +1016,8 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
     plt.xlabel("$\epsilon$")
     plt.yscale("log")
     plt.ylabel("$a$ value")
+    plt.ylim(top=1e8)
+    plt.grid(True)
     plt.title("FIT2 $a$ parameter evolution over $\epsilon$\n"+
               "N partitions $= {}$, central angle $= {:.3f}$".
               format(n_partitions, angle))
