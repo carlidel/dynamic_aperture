@@ -1283,6 +1283,8 @@ def plot_losses(title, filename,
 ################################################################################
 ################################################################################
 
+from matplotlib.lines import Line2D
+
 def remove_first_times_lhc(data, lower_bound):
     for folder in data:
         for kind in data[folder]:
@@ -1537,6 +1539,46 @@ def lhc_plot_chi_squared2(data, folder, kind, fit1_p, fit2_b):
     plt.title("Behaviour of Chi-Squared function in non linear fit part")
     plt.tight_layout()
     plt.savefig("img/lhc/lhc_" + folder + kind + "f2" + "_chisquared.png",
+                dpi=DPI)
+    plt.clf()
+
+
+def lhc_plot_chi_squared2_multiple(data, free_data, folder, kind, k_values,
+                                   imgname="img/lhc/lhc_multiple"):
+    custom_lines = []
+    custom_labels = []
+    colors = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
+    
+    for seed in free_data[folder][kind]:
+        plt.plot(sorted(seed),
+                 [seed[x][2] for x in sorted(seed)],
+                 color=colors[0],
+                 linewidth=0.3,
+                 marker='o',
+                 markersize=0.0)
+    custom_lines.append(Line2D([0], [0], color=colors[0], lw=4))
+    custom_labels.append("Free $k$")
+    j = 1
+    for k in k_values:
+        for seed in data[k][folder][kind]:
+            plt.plot(sorted(seed),
+                     [seed[x][2] for x in sorted(seed)],
+                     color=colors[j % len(colors)],
+                     linewidth=0.3,
+                     marker='o',
+                     markersize=0.0)
+        custom_lines.append(Line2D([0], [0], color=colors[j % len(colors)], lw=4))
+        custom_labels.append("$k = {:.2f}$".format(k))
+        j += 1
+    plt.xlabel("a value")
+    plt.xscale("log")
+    plt.ylabel("Chi-Squared value")
+    plt.yscale("log")
+    plt.title("Behaviour of Chi-Squared function for different $k$ values\n"
+              + folder + " " + kind)
+    plt.legend(custom_lines, custom_labels)
+    plt.tight_layout()
+    plt.savefig(imgname + "_" + folder + kind + "f2" + "_chisquared.png",
                 dpi=DPI)
     plt.clf()
 

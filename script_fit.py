@@ -1137,25 +1137,31 @@ k_max = 7.
 dk = 0.1
 n_iterations = 7
 
+fit_lhc1 = {}
 best_fit_lhc1 = {}
 
 for label in lhc_data:
+    fit_lhc1_label = {}
     best_fit_lhc1_label = {}
     for i in lhc_data[label]:
         j = 0
         print(label, i)
+        fit_lhc1_correction = []
         best_fit_lhc1_correction = []
         for seed in lhc_data[label][i]:
             print(j)
             j += 1
             # FIT1
-            best_fit_lhc1_correction.append(
-                                non_linear_fit1_iterated(seed,
+            fit, best = non_linear_fit1_iterated(seed,
                                                 sigma_filler(seed, 0.05),
                                                 np.asarray(sorted(seed.keys())),
                                                 k_min, k_max,
-                                                dk, n_iterations)[1])
+                                                dk, n_iterations)
+            fit_lhc1_correction.append(fit)
+            best_fit_lhc1_correction.append(best)
+        fit_lhc1_label[i] = fit_lhc1_correction
         best_fit_lhc1_label[i] = best_fit_lhc1_correction
+    fit_lhc1[label] = fit_lhc1_label
     best_fit_lhc1[label] = best_fit_lhc1_label
 
 #%%
@@ -1165,26 +1171,85 @@ da = 0.001
 a_max = 0.1
 a_bound = 1e10
 
+fit_lhc2 = {}
 best_fit_lhc2 = {}
 
 for label in lhc_data:
+    fit_lhc2_label = {}
     best_fit_lhc2_label = {}
     for i in lhc_data[label]:
         j = 0
         print(label, i)
+        fit_lhc2_correction = []
         best_fit_lhc2_correction = []
         for seed in lhc_data[label][i]:
             print(j)
             j += 1
             a_default = np.asarray(sorted(seed.keys()))[-1]
             a_min = (1/np.asarray(sorted(seed.keys()))[0]) + da
-            best_fit_lhc2_correction.append(
-                non_linear_fit2_final(seed,
-                                      sigma_filler(seed, 0.05),
-                                      np.asarray(sorted(seed.keys())),
-                                      a_min, a_max, da, a_bound, a_default)[1])
+            fit, best = non_linear_fit2_final(
+                            seed,
+                            sigma_filler(seed, 0.05),
+                            np.asarray(sorted(seed.keys())),
+                            a_min, a_max, da, a_bound, a_default)
+            fit_lhc2_correction.append(fit)
+            best_fit_lhc2_correction.append(best)
+        fit_lhc2_label[i] = fit_lhc2_correction
         best_fit_lhc2_label[i] = best_fit_lhc2_correction
+    fit_lhc2[label] = fit_lhc2_label
     best_fit_lhc2[label] = best_fit_lhc2_label
+
+#%%
+print("Compute FIT2 fixed k")
+
+k_values = [0.1, 0.33, 0.5, 0.7, 1]
+
+da = 0.001
+a_max = 0.1
+a_bound = 1e10
+
+fit_lhc2_fixedk = {}
+best_fit_lhc2_fixedk = {}
+
+for k in k_values:
+    print(k)
+    fit_lhc2_fixedk_k = {}
+    best_fit_lhc2_fixedk_k = {}
+    for label in lhc_data:
+        fit_lhc2_fixedk_label = {}
+        best_fit_lhc2_fixedk_label = {}
+        for i in lhc_data[label]:
+            j = 0
+            print(k, label, i)
+            fit_lhc2_fixedk_correction = []
+            best_fit_lhc2_fixedk_correction = []
+            for seed in lhc_data[label][i]:
+                print(j)
+                j += 1
+                a_default = np.asarray(sorted(seed.keys()))[-1]
+                a_min = (1/np.asarray(sorted(seed.keys()))[0]) + da
+                fit, best = non_linear_fit2_final_fixedk(
+                                seed,
+                                sigma_filler(seed, 0.05),
+                                np.asarray(sorted(seed.keys())),
+                                a_min, a_max, da, a_bound, a_default,
+                                k)
+                fit_lhc2_fixedk_correction.append(fit)
+                best_fit_lhc2_fixedk_correction.append(best)
+            fit_lhc2_fixedk_label[i] = fit_lhc2_fixedk_correction
+            best_fit_lhc2_fixedk_label[i] = best_fit_lhc2_fixedk_correction
+        fit_lhc2_fixedk_k[label] = fit_lhc2_fixedk_label
+        best_fit_lhc2_fixedk_k[label] = best_fit_lhc2_fixedk_label
+    fit_lhc2_fixedk[k] = fit_lhc2_fixedk_k
+    best_fit_lhc2_fixedk[k] = best_fit_lhc2_fixedk_k
+
+#%%
+print("Save fit")
+
+fit_lhc = (fit_lhc1, fit_lhc2, fit_lhc2_fixedk,
+           best_fit_lhc1, best_fit_lhc2, best_fit_lhc2_fixedk)
+with open("LHC_FIT.pkl", "wb") as f:
+    pickle.dump(fit_lhc, f, pickle.HIGHEST_PROTOCOL)
 
 #%%
 print("Load fit (if already done).")
@@ -1192,8 +1257,10 @@ print("Load fit (if already done).")
 fit_lhc = pickle.load(open("LHC_FIT.pkl", "rb"))
 fit_lhc1 = fit_lhc[0]
 fit_lhc2 = fit_lhc[1]
-best_fit_lhc1 = fit_lhc[2]
-best_fit_lhc2 = fit_lhc[3]
+fit_lhc2_fixedk = fit_lhc[2]
+best_fit_lhc1 = fit_lhc[3]
+best_fit_lhc2 = fit_lhc[4]
+best_fit_lhc2_fixedk = fit_lhc[5]
 
 #%%
 print("Is fit1 positive? Is fit2 bounded in a?")
@@ -1240,6 +1307,15 @@ for folder in lhc_data:
                      pass_params_fit2, folder + kind + "f2",
                      fit1_lhc_pos[folder][kind],
                      fit2_lhc_bound[folder][kind])
+
+#%%
+print("All chisquared!")
+
+for folder in lhc_data:
+    for kind in lhc_data[folder]:
+        print(folder, kind)
+        lhc_plot_chi_squared2_multiple(fit_lhc2_fixedk, fit_lhc2,
+                                       folder, kind, k_values)
 
 #%%
 print("lhc best fit distribution1")
