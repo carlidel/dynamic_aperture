@@ -142,7 +142,7 @@ print("final form of fit2.")
 da = 0.0001
 a_max = 0.01
 a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
-a_bound = 1e10
+a_bound = n_turns[-1] / a_max
 a_default = n_turns[-1]
 
 fit_parameters2 = {}
@@ -198,7 +198,7 @@ k_values = [0.05, 0.1, 0.15, 0.2, 0.25,
 da = 0.0001
 a_max = 0.01
 a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
-a_bound = 1e10
+a_bound = n_turns[-1] / a_max
 a_default = n_turns[-1]
 
 fit_parameters2_fixedk = {}
@@ -259,7 +259,7 @@ dk = 0.01
 da = 0.0005
 a_max = 0.01
 a_min = (1 / n_turns[0]) + da ### under this value it doesn't converge
-a_bound = 1e10
+a_bound = n_turns[-1] / a_max
 a_default = n_turns[-1]
 
 best_fit_parameters2_doublescan = {}
@@ -381,7 +381,8 @@ print("Fit2 param evolution over epsilon")
 temp = list(best_fit_parameters2.keys())[0]
 for N in best_fit_parameters2[temp]:
     for angle in (best_fit_parameters2[temp][N]):
-        fit_params_over_epsilon2(best_fit_parameters2, N, angle)
+        fit_params_over_epsilon2(best_fit_parameters2, N, angle,
+                                 titlekind="only scan over $a$")
 
 #%%
 print("Fit2 param evolution over epsilon fixed k")
@@ -397,7 +398,7 @@ temp = list(best_fit_parameters2_doublescan.keys())[0]
 for N in best_fit_parameters2_doublescan[temp]:
     for angle in (best_fit_parameters2_doublescan[temp][N]):
         fit_params_over_epsilon2(best_fit_parameters2_doublescan, N, angle,
-                                 "img/fit/f2param_eps_doublescan")
+                                 "img/fit/f2param_eps_doublescan", "doublescan")
 
 #%%
 print("compose fit over epsilon.")
@@ -414,14 +415,14 @@ for N in best_fit_parameters2[temp]:
 
 #%%
 print("compose fit over epsilon.")
-for N in best_fit_parameters2[temp]:
-    for angle in (best_fit_parameters2[temp][N]):
+for N in best_fit_parameters2_doublescan[temp]:
+    for angle in (best_fit_parameters2_doublescan[temp][N]):
         combine_image_3x2("img/fit/paramsFIT2_over_epsilon_N{}_ang{:2.2f}.png".
             format(N, angle),
-          "img/fit/f2param_eps_doublescan_A_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_doublescan_a_N{}_ang{:2.2f}.png".format(N, angle),
           "img/fit/f2param_eps_doublescan_B_N{}_ang{:2.2f}.png".format(N, angle),
           "img/fit/f2param_eps_doublescan_k_N{}_ang{:2.2f}.png".format(N, angle),
-          "img/fit/f2param_eps_A_N{}_ang{:2.2f}.png".format(N, angle),
+          "img/fit/f2param_eps_a_N{}_ang{:2.2f}.png".format(N, angle),
           "img/fit/f2param_eps_B_N{}_ang{:2.2f}.png".format(N, angle),
           "img/fit/f2param_eps_k_N{}_ang{:2.2f}.png".format(N, angle))
 
@@ -1291,10 +1292,50 @@ for k in k_values:
     best_fit_lhc2_fixedk[k] = best_fit_lhc2_fixedk_k
 
 #%%
+print("Compute FIT2 doublescan")
+
+k_min = 0.01
+dk = 0.01
+
+da = 0.0005
+a_max = 0.01
+
+fit_lhc2_doublescan = {}
+best_fit_lhc2_doublescan = {}
+
+for label in lhc_data:
+    fit_lhc2_doublescan_label = {}
+    best_fit_lhc2_doublescan_label = {}
+    for i in lhc_data[label]:
+        j = 0
+        print(label, i)
+        fit_lhc2_doublescan_correction = []
+        best_fit_lhc2_doublescan_correction = []
+        for seed in lhc_data[label][i]:
+            print(j)
+            j += 1
+            a_default = np.asarray(sorted(seed.keys()))[-1]
+            a_bound = np.asarray(sorted(seed.keys()))[-1] / a_max
+            a_min = (1/np.asarray(sorted(seed.keys()))[0]) + da
+            fit, best = non_linear_fit2_doublescan(
+                            seed,
+                            sigma_filler(seed, 0.05),
+                            np.asarray(sorted(seed.keys())),
+                            k_min, dk,
+                            a_min, a_max, da, a_bound, a_default)
+            fit_lhc2_doublescan_correction.append(fit)
+            best_fit_lhc2_doublescan_correction.append(best)
+        fit_lhc2_doublescan_label[i] = fit_lhc2_doublescan_correction
+        best_fit_lhc2_doublescan_label[i] = best_fit_lhc2_doublescan_correction
+    fit_lhc2_doublescan[label] = fit_lhc2_doublescan_label
+    best_fit_lhc2_doublescan[label] = best_fit_lhc2_doublescan_label
+
+#%%
 print("Save fit")
 
-fit_lhc = (fit_lhc1, fit_lhc2, fit_lhc2_fixedk,
-           best_fit_lhc1, best_fit_lhc2, best_fit_lhc2_fixedk)
+fit_lhc = (fit_lhc1, fit_lhc2, fit_lhc2_fixedk, fit_lhc2_doublescan,
+           best_fit_lhc1, best_fit_lhc2, best_fit_lhc2_fixedk,
+           best_fit_lhc2_doublescan)
 with open("LHC_FIT.pkl", "wb") as f:
     pickle.dump(fit_lhc, f, pickle.HIGHEST_PROTOCOL)
 
@@ -1305,9 +1346,11 @@ fit_lhc = pickle.load(open("LHC_FIT.pkl", "rb"))
 fit_lhc1 = fit_lhc[0]
 fit_lhc2 = fit_lhc[1]
 fit_lhc2_fixedk = fit_lhc[2]
-best_fit_lhc1 = fit_lhc[3]
-best_fit_lhc2 = fit_lhc[4]
-best_fit_lhc2_fixedk = fit_lhc[5]
+fit_lhc2_doublescan = fit_lhc[3]
+best_fit_lhc1 = fit_lhc[4]
+best_fit_lhc2 = fit_lhc[5]
+best_fit_lhc2_fixedk = fit_lhc[6]
+best_fit_lhc2_doublescan = fit_lhc[7]
 
 #%%
 print("Is fit1 positive? Is fit2 bounded in a?")
@@ -1346,11 +1389,13 @@ print("general lhc plots.")
 for folder in lhc_data:
     for kind in lhc_data[folder]:
         print(folder, kind)
-        plot_lhc_fit(best_fit_lhc1[folder][kind], lhc_data[folder][kind],
+        plot_lhc_fit(best_fit_lhc1[folder][kind],
+                     lhc_data[folder][kind],
                      pass_params_fit1, folder + kind + "f1",
                      fit1_lhc_pos[folder][kind],
                      fit2_lhc_bound[folder][kind])
-        plot_lhc_fit(best_fit_lhc2[folder][kind], lhc_data[folder][kind],
+        plot_lhc_fit(best_fit_lhc2_doublescan[folder][kind],
+                     lhc_data[folder][kind],
                      pass_params_fit2, folder + kind + "f2",
                      fit1_lhc_pos[folder][kind],
                      fit2_lhc_bound[folder][kind])
@@ -1381,8 +1426,10 @@ print("lhc best fit distribution2")
 for label in best_fit_lhc2:
     for kind in best_fit_lhc2[label]:
         print(label, kind)
-        best_fit_seed_distrib2(best_fit_lhc2[label][kind], label + kind + "f2")
-        lhc_2param_comparison2(best_fit_lhc2[label][kind], label + kind + "f2")
+        best_fit_seed_distrib2(best_fit_lhc2_doublescan[label][kind],
+                               label + kind + "f2")
+        lhc_2param_comparison2(best_fit_lhc2_doublescan[label][kind],
+                               label + kind + "f2")
         #lhc_plot_chi_squared2(fit_lhc2[label][kind], label, kind,
         #                      fit1_lhc_pos[label][kind],
         #                      fit2_lhc_bound[label][kind])

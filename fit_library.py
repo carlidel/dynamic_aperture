@@ -469,27 +469,30 @@ def non_linear_fit2_fixedk_naive(data, err_data, n_turns, k, p0B=1., p0a=1.):
 def non_linear_fit2_doublescan(data, err_data, n_turns,
                                k_min, dk, a_min, a_max, da, a_bound, a_default):
     best_fit_list = []
+    fit_list = []
+    chi_values = []
     k = k_min
-    print(k)
+    #print(k)
     fit, best_fit = non_linear_fit2_final_fixedk(data, err_data, n_turns,
                                                  a_min, a_max, da, a_bound,
                                                  a_default, k, dk)
+    fit_list.append(fit)
     best_fit_list.append(best_fit)
-    k += dk
-    print(k)
-    fit, best_fit2 = non_linear_fit2_final_fixedk(data, err_data, n_turns,
-                                                 a_min, a_max, da, a_bound,
-                                                 a_default, k, dk)
-    best_fit_list.append(best_fit2)
-    while best_fit2[6] < best_fit[6] and best_fit2[5] != 0.:
-        best_fit = best_fit2
+    chi_values.append(best_fit[6])
+
+    while best_fit[5] != 0.:
         k += dk
-        print(k)
-        fit, best_fit2 = non_linear_fit2_final_fixedk(data, err_data, n_turns,
+        #print(k)
+        fit, best_fit = non_linear_fit2_final_fixedk(data, err_data, n_turns,
                                                  a_min, a_max, da, a_bound,
                                                  a_default, k, dk)
-        best_fit_list.append(best_fit2)
-    return fit, best_fit
+        if best_fit[5] != 0.:
+            fit_list.append(fit)
+            best_fit_list.append(best_fit)
+            chi_values.append(best_fit[6])
+
+    index = chi_values.index(min(chi_values))
+    return fit_list[index], best_fit_list[index]
 
 def select_best_fit2(parameters):
     best = sorted(parameters.items(), key=lambda kv: kv[1][2])[0]
@@ -961,7 +964,7 @@ def fit_params_over_epsilon1(fit_params_dict, n_partitions=1, angle=np.pi / 4):
 
 
 def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
-                             imgname="img/fit/f2param_eps"):
+                             imgname="img/fit/f2param_eps", titlekind=""):
     ## k
     plt.errorbar(
         [x[2] for x in sorted(fit_params_dict)],
@@ -977,8 +980,8 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
     plt.ylabel("$k$ value")
     plt.grid(True)
     plt.title("FIT2 $k$ parameter evolution over $\epsilon$\n"+
-              "N partitions $= {}$, central angle $= {:.3f}$".
-              format(n_partitions, angle))
+              "N partitions $= {}$, central angle $= {:.3f}$, ".
+              format(n_partitions, angle) + titlekind) 
     plt.savefig(imgname + "_k_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
@@ -997,8 +1000,8 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
     plt.ylabel("$B$ value")
     plt.grid(True)
     plt.title("FIT2 $B$ parameter evolution over $\epsilon$\n"+
-              "N partitions $= {}$, central angle $= {:.3f}$".
-              format(n_partitions, angle))
+              "N partitions $= {}$, central angle $= {:.3f}$, ".
+              format(n_partitions, angle) + titlekind)
     plt.savefig(imgname + "_B_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
@@ -1016,11 +1019,11 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
     plt.xlabel("$\epsilon$")
     plt.yscale("log")
     plt.ylabel("$a$ value")
-    plt.ylim(top=1e8)
+    plt.ylim(top=1.2e7)
     plt.grid(True)
     plt.title("FIT2 $a$ parameter evolution over $\epsilon$\n"+
-              "N partitions $= {}$, central angle $= {:.3f}$".
-              format(n_partitions, angle))
+              "N partitions $= {}$, central angle $= {:.3f}$, ".
+              format(n_partitions, angle) +  titlekind)
     plt.savefig(imgname + "_a_N{}_ang{:2.2f}.png".
                 format(n_partitions, angle), dpi=DPI)
     plt.clf()
@@ -1039,7 +1042,7 @@ sigmas = [0.2, 0.25, 0.5, 0.75, 1]
 
 # Functions
 
-def intensity_zero_gaussian(x, y, sigma_x=1, sigma_y=1):
+def intensity_zero_gaussian(x, y, sigma_x, sigma_y):
     return (1 / (2 * np.pi * sigma_x * sigma_y)) * np.exp(-(
         (x**2 / (2 * sigma_x**2)) + (y**2 / (2 * sigma_y**2))))
 
