@@ -1029,6 +1029,51 @@ def fit_params_over_epsilon2(fit_params_dict, n_partitions=1, angle=np.pi / 4,
     plt.clf()
 
 
+def plot_B_over_k(fit_params_dict, n_partitions=1, angle=np.pi / 4,
+                  imgname="img/fit/f2param_B_k", titlekind=""):
+    # B
+    x = np.asarray([fit_params_dict[i][n_partitions][angle][2] 
+                    for i in sorted(fit_params_dict)])
+    # k
+    y = np.asarray([fit_params_dict[i][n_partitions][angle][0] 
+                    for i in sorted(fit_params_dict)])
+    plt.errorbar(
+        x, y,
+        xerr=[fit_params_dict[x][n_partitions][angle][3] 
+            for x in sorted(fit_params_dict)],
+        yerr=[fit_params_dict[x][n_partitions][angle][1] 
+            for x in sorted(fit_params_dict)],
+        linewidth=0.0,
+        elinewidth=1.,
+        marker="x",
+        markersize=1,
+        label="Data")
+    par, cov = np.polyfit(x, y, deg=1, cov=True)
+    # par_plus = np.array([par[0] + np.sqrt(cov[0][0]),
+    #                      par[1] + np.sqrt(cov[1][1])])
+    # par_minus = np.array([par[0] - np.sqrt(cov[0][0]),
+    #                       par[1] - np.sqrt(cov[1][1])]) 
+    p = np.poly1d(par)
+    # p_plus = np.poly1d(par_plus)
+    # p_minus = np.poly1d(par_minus)
+    plt.plot(x, p(x), "g--", linewidth=0.5,
+             label="p[0]$={:.3}\pm{:.1}$, p[1]$={:.3}\pm{:.1}$".
+             format(par[0], np.sqrt(cov[0][0]), par[1], np.sqrt(cov[1][1])))
+    # plt.plot(x, p_plus(x), "g--", linewidth=0.5)
+    # plt.plot(x, p_minus(x), "g--", linewidth=0.5)
+    plt.xlabel("B parameter")
+    plt.ylabel("k parameter")
+    plt.grid(True)
+    plt.title("FIT2 $k$ parameter over $B$ parameter\n"+
+              "N partitions $= {}$, central angle $= {:.3f}$, ".
+              format(n_partitions, angle) +  titlekind)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(imgname + "_N{}_ang{:2.2f}.png".
+                format(n_partitions, angle), dpi=DPI)
+    plt.clf()
+
+
 ################################################################################
 ################################################################################
 ################################################################################

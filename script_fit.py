@@ -448,6 +448,23 @@ for epsilon in best_fit_parameters2:
         "img/fit/fit2" + label + "_B.png",
         "img/fit/fit2" + label + "_k.png")
 
+#%%
+print("B and k!")
+temp = list(best_fit_parameters2_doublescan.keys())[0]
+for N in best_fit_parameters2_doublescan[temp]:
+    for angle in (best_fit_parameters2_doublescan[temp][N]):
+        plot_B_over_k(best_fit_parameters2_doublescan, N, angle,
+                      "img/fit/f2param_B_k_doublescan", "doublescan")
+
+#%%
+print("B and k standard")
+temp = list(best_fit_parameters2.keys())[0]
+for N in best_fit_parameters2[temp]:
+    for angle in (best_fit_parameters2[temp][N]):
+        plot_B_over_k(best_fit_parameters2, N, angle,
+                      "img/fit/f2param_B_k_singlescan", "scan only on $a$")
+
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -1183,7 +1200,7 @@ print("Compute FIT1 Final Version")
 k_min = -20.
 k_max = 7.
 dk = 0.1
-n_iterations = 7
+n_iterations = 5
 
 fit_lhc1 = {}
 best_fit_lhc1 = {}
