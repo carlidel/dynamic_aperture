@@ -39,10 +39,10 @@ n_turns = np.array([
 
 # Partition list for basic angle partitioning
 partition_lists = [
-    [0, np.pi / 2]#,  # Always always keep this one
-    #[0, np.pi / 4, np.pi / 2],
-    #[0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
-    #[0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]
+    [0, np.pi / 2],  # Always always keep this one
+    [0, np.pi / 4, np.pi / 2],
+    [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
+    [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]
     # [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
     # [
     #     0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12,

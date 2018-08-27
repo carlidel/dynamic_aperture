@@ -438,10 +438,10 @@ for epsilon in best_fit_parameters1:
         "img/fit/fit1" + label + "_B.png",
         "img/fit/fit1" + label + "_k.png")
 
-for epsilon in best_fit_parameters2:
+for epsilon in best_fit_parameters2_doublescan:
     print(epsilon)
     label = "partitioneps{:2.2f}".format(epsilon[2])
-    fit_parameters_evolution2(best_fit_parameters2[epsilon],
+    fit_parameters_evolution2(best_fit_parameters2_doublescan[epsilon],
         label)
     combine_image_3x1("img/fit/partitions2_eps{:2.2f}.png".format(epsilon[2]),
         "img/fit/fit2" + label + "_a.png",
