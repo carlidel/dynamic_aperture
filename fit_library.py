@@ -40,14 +40,17 @@ n_turns = np.array([
 # Partition list for basic angle partitioning
 partition_lists = [
     [0, np.pi / 2],  # Always always keep this one
-    [0, np.pi / 4, np.pi / 2],
-    [0, np.pi / (2 * 3), np.pi / (3), np.pi / 2],
-    [0, np.pi / 8, np.pi * 2 / 8, np.pi * 3 / 8, np.pi / 2]
-    # [0, np.pi / 10, np.pi * 2 / 10, np.pi * 3 / 10, np.pi * 4 / 10, np.pi / 2],
-    # [
-    #     0, np.pi / 12, np.pi * 2 / 12, np.pi * 3 / 12, np.pi * 4 / 12,
-    #     np.pi * 5 / 12, np.pi / 2
-    #]
+    [x for x in np.linspace(0, np.pi / 2, num=3)],
+    [x for x in np.linspace(0, np.pi / 2, num=4)],
+    [x for x in np.linspace(0, np.pi / 2, num=5)],
+    [x for x in np.linspace(0, np.pi / 2, num=6)],
+    [x for x in np.linspace(0, np.pi / 2, num=7)],
+    [x for x in np.linspace(0, np.pi / 2, num=8)],
+    [x for x in np.linspace(0, np.pi / 2, num=9)],
+    [x for x in np.linspace(0, np.pi / 2, num=10)],
+    [x for x in np.linspace(0, np.pi / 2, num=11)],
+    [x for x in np.linspace(0, np.pi / 2, num=12)],
+    [x for x in np.linspace(0, np.pi / 2, num=13)]
 ]
 
 ################################################################################
@@ -1189,7 +1192,7 @@ def error_loss_estimation_single_partition(best_fit_params, fit_func,
 ################################################################################
 
 def plot_fit_loss1(fit_params, sigma, epsilon, n_turns, dynamic_aperture,
-                    loss_kind, imgpath="img/loss/fit1"):
+                   loss_kind, imgpath="img/loss/fit1"):
     plt.errorbar(
         n_turns, dynamic_aperture[sigma][epsilon],
         yerr=dynamic_aperture[sigma][epsilon] * 0.01,
@@ -1315,7 +1318,8 @@ def plot_fit_loss2(fit_params, sigma, epsilon, n_turns, dynamic_aperture,
 def plot_losses(title, filename,
                 n_turns, data_list=[], data_label_list=[],
                 param_list=[], param_list_min=[], param_list_max=[],
-                param_error_list=[], param_label_list=[]):
+                param_error_list=[], param_label_list=[],
+                scan_error=True, fit_error=True):
     colors = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
     j = 0
     for i in range(len(data_list)):
@@ -1325,22 +1329,31 @@ def plot_losses(title, filename,
             linewidth=0.5,
             label=data_label_list[i],
             color=colors[j])
-        j += 1
+        j = (j + 1) % len(colors)
     for i in range(len(param_list)):
-        plt.errorbar(
-            n_turns,
-            param_list[i][1:],
-            yerr=param_error_list[i][1:],
-            linewidth=0.5,
-            label=param_label_list[i],
-            color=colors[j])
-        plt.fill_between(
-            n_turns,
-            param_list_min[i][1:],
-            param_list_max[i][1:],
-            interpolate=True, alpha=0.5,
-            color=colors[j])
-        j += 1
+        if scan_error:
+            plt.errorbar(
+                n_turns,
+                param_list[i][1:],
+                yerr=param_error_list[i][1:],
+                linewidth=0.5,
+                label=param_label_list[i],
+                color=colors[j])
+        else:
+            plt.plot(
+                n_turns,
+                param_list[i][1:],
+                linewidth=0.5,
+                label=param_label_list[i],
+                color=colors[j])
+        if fit_error:
+            plt.fill_between(
+                n_turns,
+                param_list_min[i][1:],
+                param_list_max[i][1:],
+                interpolate=True, alpha=0.5,
+                color=colors[j])
+        j = (j + 1) % len(colors)
     plt.title(title)
     plt.xlabel("N turns")
     plt.xscale("log")
@@ -1350,6 +1363,42 @@ def plot_losses(title, filename,
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(filename, dpi=DPI)  
+    plt.clf()
+
+
+def compute_l2(n_turns, data, param_list):
+    error = np.array([(data[i] - param_list[i])**2 for i in range(len(data))])
+    return integrate.simps(error, n_turns)
+
+
+def plot_l2(title, filename, n_turns, data, data_all, param_list):
+    l2 = []
+    l2_all = []
+    for i in range(len(param_list)):
+        l2.append(compute_l2(n_turns, data[1:], param_list[i][1:]))
+        l2_all.append(compute_l2(n_turns, data_all[1:], param_list[i][1:]))
+    plt.plot(
+        list(range(1, len(param_list) + 1)),
+        l2,
+        marker="x",
+        linewidth=0.,
+        markersize=4.,
+        label="$L^2 norm with main region loss$")
+    # plt.plot(
+    #     list(range(1, len(param_list) + 1)),
+    #     l2_all,
+    #     marker="x",
+    #     linewidth=0.,
+    #     markersize=2.,
+    #     label="$L^2 norm with all losses$")
+    # plt.legend()
+    plt.xlabel("Number of partitions")
+    plt.ylabel("$L^2$-norm")
+    plt.ylim(bottom=0.)
+    plt.title(title)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=DPI)
     plt.clf()
 
 ################################################################################

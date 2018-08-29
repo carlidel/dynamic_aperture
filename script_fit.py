@@ -998,7 +998,9 @@ for sigma in sigmas:
                 loss_fit2_loss_all_max[sigma][epsilon]],
             [loss_fit1_loss_all_err[sigma][epsilon],
                 loss_fit2_loss_all_err[sigma][epsilon]],
-            ["D loss all FIT1", "D loss all FIT2"])
+            ["D loss all FIT1", "D loss all FIT2"],
+            fit_error=False,
+            scan_error=False)
 
         ### Anglescan and Anglescan Fit
         plot_losses(
@@ -1018,7 +1020,9 @@ for sigma in sigmas:
                 loss_fit2_loss_mainregion_max[sigma][epsilon]],
             [loss_fit1_loss_mainregion_err[sigma][epsilon],
                 loss_fit2_loss_mainregion_err[sigma][epsilon]],
-            ["D loss mainregion FIT1", "D loss mainregion FIT2"])
+            ["D loss mainregion FIT1", "D loss mainregion FIT2"],
+            fit_error=False,
+            scan_error=False)
 
         plot_losses(
             ("Comparison of loss measures (mainregion with D FITS),\n" +
@@ -1048,7 +1052,9 @@ for sigma in sigmas:
             ["D loss FIT1, N $= {}$".format(N)
                 for N in loss_D_fit1[sigma][epsilon]] +
                 ["D loss FIT2, N $= {}$".format(N)
-                for N in loss_D_fit2[sigma][epsilon]])
+                for N in loss_D_fit2[sigma][epsilon]],
+            fit_error=False,
+            scan_error=False)
 
         plot_losses(
             ("Comparison of loss measures (loss all, loss all fits, D fits),\n" +
@@ -1087,7 +1093,38 @@ for sigma in sigmas:
                 for N in loss_D_fit1[sigma][epsilon]] +
                 ["D loss FIT2, N $= {}$".format(N)
                 for N in loss_D_fit2[sigma][epsilon]] +
-                ["D loss all FIT1", "D loss all FIT2"])
+                ["D loss all FIT1", "D loss all FIT2"],
+            fit_error=False,
+            scan_error=False)
+
+#%%
+print("plot L2 norm")
+for sigma in sigmas:
+    print(sigma)
+    for epsilon in loss_all[sigma]:
+        print(epsilon)
+        plot_l2(
+            ("$L^2$-norm of difference between mainregion loss\n" +
+             "and FIT1 over D loss, $\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
+                        format(sigma, epsilon[2])),
+             "img/loss/l2_mainregion_fit1_sig{:2.2f}_eps{:2.0f}.png".
+                        format(sigma, epsilon[2]),
+             n_turns,
+             loss_mainregion[sigma][epsilon],
+             loss_all[sigma][epsilon],
+             [loss_D_fit1[sigma][epsilon][N] 
+                for N in loss_D_fit1[sigma][epsilon]])
+        plot_l2(
+            ("$L^2$-norm of difference between mainregion loss\n" +
+             "and FIT2 over D loss, $\sigma = {:2.2f}$, $\epsilon = {:2.0f}$".
+                        format(sigma, epsilon[2])),
+             "img/loss/l2_mainregion_fit2_sig{:2.2f}_eps{:2.0f}.png".
+                        format(sigma, epsilon[2]),
+             n_turns,
+             loss_mainregion[sigma][epsilon],
+             loss_all[sigma][epsilon],
+             [loss_D_fit2[sigma][epsilon][N] 
+                for N in loss_D_fit2[sigma][epsilon]])
 
         
 ################################################################################
