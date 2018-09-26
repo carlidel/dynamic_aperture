@@ -5,7 +5,7 @@
 #include <cmath>
 #include <string>
 
-// Variables
+// Parameters
 
 double epsilon_k[7] =
 {
@@ -68,7 +68,7 @@ double * modulated_hennon_map(double * v0, double epsilon, unsigned int n)
 	return v0;
 }
 
-int modulated_particle(double x0, double y0, unsigned int T, double epsilon)
+int modulated_particle(double x0, double y0, unsigned int max_turns, double epsilon)
 {
 	double * v = new double [4];
 	v[0] = x0;
@@ -76,10 +76,10 @@ int modulated_particle(double x0, double y0, unsigned int T, double epsilon)
 	v[2] = y0;
 	v[3] = 0;
 
-	for (unsigned int i = 0; i < T; ++i)
+	for (unsigned int i = 0; i < max_turns; ++i)
 	{
 		v = modulated_hennon_map(v, epsilon, i);
-		if (v[0]*v[0] + v[2]*v[2] > 1000000)
+		if (v[0]*v[0] + v[2]*v[2] > 10000)
 		{
 			// Particle lost!
 			delete v;
@@ -91,46 +91,24 @@ int modulated_particle(double x0, double y0, unsigned int T, double epsilon)
 	return -1;
 }
 
-std::vector<double> * modulated_radius_scan(double theta, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int n_steps = 1000)
+double * modulated_radius_scan(double theta, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int n_steps = 1000)
 {
-	std::vector<double> * v = new std::vector<double>();
-	
+	double * v = new double[n_steps];
 	int temp;
-	
 	for (unsigned int i = 0; i < n_steps; i++)
 	{
 		temp = modulated_particle(i * dx * cos(theta), i * dx * sin(theta), max_turns, epsilon);
 		if (temp != -1)
-			v->push_back(temp);
+			v[i] = temp;
 		else
-			v->push_back(max_turns);
-	}
-	
-	return v;
-}
-
-std::vector<double> * modulated_linear_scan(double y, double dx, double epsilon, unsigned int max_turns = 10000000, unsigned int n_scans = 1000)
-{
-	std::vector<double> * v = new std::vector<double>();
-
-	for(unsigned i = 0; i < n_scans; i++)
-	{
-		double temp = modulated_particle(i * dx, y, max_turns, epsilon);
-		if (temp != -1)
-		{
-			v->push_back(temp);
-		}
-		else
-		{
-			v->push_back(max_turns);
-		}
+			v[i] = max_turns;
 	}
 	return v;
 }
 
 int main(int argc, const char * argv[])
 {
-
+	// Input parameters
 	epsilon_k[0]			= atof(argv[1]);
 	epsilon_k[1]			= atof(argv[2]);
 	epsilon_k[2]			= atof(argv[3]);
@@ -150,7 +128,6 @@ int main(int argc, const char * argv[])
 	double d_theta = M_PI / (2 * n_theta);
 
 	// Variables for angular scan
-
 	std::cout << "epsilon_k[0] "<< epsilon_k[0]	<< std::endl;
 	std::cout << "epsilon_k[1] "<< epsilon_k[1]	<< std::endl;
 	std::cout << "epsilon_k[2] "<< epsilon_k[2]	<< std::endl;
@@ -168,62 +145,18 @@ int main(int argc, const char * argv[])
 	std::cout << "from_angle " 	<< from 		<< std::endl;
 	std::cout << "to_angle " 	<< to 			<< std::endl;
 
-	for (double angle = from * d_theta; angle < to * d_theta; angle += d_theta)
+	for (int i = from; i < to; i++)
 	{
 		//std::cout << "Scanning angle: " << angle << "/" << M_PI / 4 << std::endl;
+		double angle = i * d_theta;
 		std::cout << angle << " ";
-		std::vector<double> * v = modulated_radius_scan(angle, dx, epsilon, max_turns, 1 / dx);
-		for (unsigned int i = 0; i < v->size(); ++i)
+		double * v = modulated_radius_scan(angle, dx, epsilon, max_turns, 1 / dx);
+		for (unsigned int i = 0; i < 1 / dx; ++i)
 		{
-			std::cout << v->at(i) << " ";
+			std::cout << v[i] << " ";
 		}
 		std::cout << std::endl;
 		delete v;
 	}
-/**/
-/*
-	// Variables for linear scan
-	epsilon_k[0]			= atof(argv[1]);
-	epsilon_k[1]			= atof(argv[2]);
-	epsilon_k[2]			= atof(argv[3]);
-	epsilon_k[3]			= atof(argv[4]);
-	epsilon_k[4]			= atof(argv[5]);
-	epsilon_k[5]			= atof(argv[6]);
-	epsilon_k[6]			= atof(argv[7]);
-	omega_x0				= atof(argv[8]) * 2 * M_PI;
-	omega_y0				= atof(argv[9]) * 2 * M_PI;
-	double dx 				= atof(argv[10]);
-	double epsilon 			= atof(argv[11]);
-	unsigned int max_turns 	= atoi(argv[12]);
-	unsigned int from 		= atoi(argv[13]);
-	unsigned int to 		= atoi(argv[14]);
-
-	std::cout << "epsilon_k[0] "<< epsilon_k[0]	<< std::endl;
-	std::cout << "epsilon_k[1] "<< epsilon_k[1]	<< std::endl;
-	std::cout << "epsilon_k[2] "<< epsilon_k[2]	<< std::endl;
-	std::cout << "epsilon_k[3] "<< epsilon_k[3]	<< std::endl;
-	std::cout << "epsilon_k[4] "<< epsilon_k[4]	<< std::endl;
-	std::cout << "epsilon_k[5] "<< epsilon_k[5]	<< std::endl;
-	std::cout << "epsilon_k[6] "<< epsilon_k[6]	<< std::endl;
-	std::cout << "omega_x0 "	<< atof(argv[8])<< std::endl;
-	std::cout << "omega_y0 "	<< atof(argv[9])<< std::endl;
-	std::cout << "dx " 			<< dx 			<< std::endl;
-	std::cout << "epsilon " 	<< epsilon 		<< std::endl;
-	std::cout << "max_turns " 	<< max_turns	<< std::endl;
-	std::cout << "from_y " 	<< from 		<< std::endl;
-	std::cout << "to_y " 	<< to 			<< std::endl;
-
-	for (double y = from * dx; y < to * dx; y += dx)
-	{
-		std::cout << y << " ";
-		std::vector<double> * v = modulated_linear_scan(y, dx, epsilon, max_turns);
-		for (unsigned int i = 0; i < v->size(); ++i)
-		{
-			std::cout << v->at(i) << " ";
-		}
-		std::cout << std::endl;
-		delete v;
-	}
-	/**/
 	return 0;
 }
